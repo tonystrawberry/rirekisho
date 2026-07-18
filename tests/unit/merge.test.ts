@@ -81,4 +81,42 @@ describe("applyConfirmedPatch", () => {
     });
     expect(next.experience[0].provenance).toBe("user");
   });
+
+  it("removes items marked with _delete including nested children", () => {
+    const base = createEmptyMasterResume("Ada");
+    base.experience = [
+      {
+        id: "exp1",
+        company: "Acme",
+        title: "Engineer",
+        bullets: ["Built APIs", "Led migrations"],
+        metrics: ["+20%"],
+        provenance: "user",
+      },
+      {
+        id: "exp2",
+        company: "Beta",
+        title: "Lead",
+        bullets: ["Shipped"],
+        metrics: [],
+        provenance: "user",
+      },
+    ];
+    base.skills = [
+      { id: "sk1", name: "TypeScript", provenance: "user" },
+      { id: "sk2", name: "Rails", provenance: "user" },
+    ];
+
+    const next = applyConfirmedPatch(base, {
+      experience: [{ id: "exp1", _delete: true }],
+      skills: [
+        { id: "sk1", _delete: true },
+        { id: "sk2", _delete: true },
+      ],
+    });
+
+    expect(next.experience).toHaveLength(1);
+    expect(next.experience[0].id).toBe("exp2");
+    expect(next.skills).toHaveLength(0);
+  });
 });

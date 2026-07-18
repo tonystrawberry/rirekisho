@@ -1,9 +1,9 @@
-import type { MasterResume } from "@/lib/resume/schema";
+import type { ResumePatch } from "@/lib/resume/schema";
 
-export type ResumePatchFn = (patch: Partial<MasterResume>) => void | Promise<void>;
+export type ResumePatchFn = (patch: ResumePatch) => void | Promise<void>;
 
 export type ResumePreviewProps = {
-  data: MasterResume;
+  data: import("@/lib/resume/schema").MasterResume;
   locale?: string;
   profileId?: string;
   /** Photo / logo uploads */

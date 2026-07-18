@@ -2,6 +2,7 @@ import React from "react";
 import { Document, Page, StyleSheet, Text, View, Image } from "@react-pdf/renderer";
 import type { MasterResume } from "@/lib/resume/schema";
 import { formatSkillWithProficiency } from "@/lib/resume/skill-proficiency";
+import { sectionLabel } from "@/lib/resume/section-labels";
 
 const styles = StyleSheet.create({
   page: { padding: 0, fontSize: 10, fontFamily: "Helvetica", color: "#1a2332" },
@@ -71,7 +72,7 @@ export function ModernDocument({
         <View style={styles.body}>
           {data.summary ? (
             <>
-              <Text style={styles.section}>Profile</Text>
+              <Text style={styles.section}>{sectionLabel("profile", locale)}</Text>
               {data.summary.split(/\n/).map((line, i) => (
                 <Text key={i} style={i > 0 ? { marginTop: 4 } : undefined}>
                   {line || " "}
@@ -79,7 +80,7 @@ export function ModernDocument({
               ))}
             </>
           ) : null}
-          <Text style={styles.section}>Experience</Text>
+          <Text style={styles.section}>{sectionLabel("experience", locale)}</Text>
           {data.experience.map((exp) => {
             const logo = logoSrcById?.[exp.id];
             return (
@@ -100,7 +101,7 @@ export function ModernDocument({
           })}
           {data.education.length ? (
             <>
-              <Text style={styles.section}>Education</Text>
+              <Text style={styles.section}>{sectionLabel("education", locale)}</Text>
               {data.education.map((ed) => {
                 const logo = logoSrcById?.[ed.id];
                 return (
@@ -125,7 +126,7 @@ export function ModernDocument({
               })}
             </>
           ) : null}
-          <Text style={styles.section}>Skills</Text>
+          <Text style={styles.section}>{sectionLabel("skills", locale)}</Text>
           {data.skills.map((s) => (
             <Text key={s.id} style={{ marginTop: 3 }}>
               {formatSkillWithProficiency(s, locale)}
@@ -133,7 +134,7 @@ export function ModernDocument({
           ))}
           {(data.certifications ?? []).length ? (
             <>
-              <Text style={styles.section}>Certifications</Text>
+              <Text style={styles.section}>{sectionLabel("certifications", locale)}</Text>
               {(data.certifications ?? []).map((c) => (
                 <Text key={c.id} style={{ marginTop: 3 }}>
                   {c.name}
@@ -145,7 +146,7 @@ export function ModernDocument({
           ) : null}
           {(data.references ?? []).length ? (
             <>
-              <Text style={styles.section}>References</Text>
+              <Text style={styles.section}>{sectionLabel("references", locale)}</Text>
               {(data.references ?? []).map((r) => (
                 <View key={r.id} style={{ marginTop: 4 }}>
                   <Text style={styles.itemTitle}>{r.name}</Text>
@@ -156,6 +157,17 @@ export function ModernDocument({
                   ) : null}
                   {r.email ? <Text style={styles.muted}>{r.email}</Text> : null}
                 </View>
+              ))}
+            </>
+          ) : null}
+          {(data.hobbies ?? []).length ? (
+            <>
+              <Text style={styles.section}>{sectionLabel("hobbies", locale)}</Text>
+              {(data.hobbies ?? []).map((h) => (
+                <Text key={h.id} style={{ marginTop: 2 }}>
+                  {h.name}
+                  {h.description ? ` — ${h.description}` : ""}
+                </Text>
               ))}
             </>
           ) : null}

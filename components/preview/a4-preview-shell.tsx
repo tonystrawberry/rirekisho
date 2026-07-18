@@ -11,9 +11,14 @@ const PAGE_GAP_PX = 12;
  * never sits flush against the page edge (especially continued pages).
  */
 const PAGE_PAD_MM = 10;
+/** CSS reference px/mm — identical on server + first client render. */
+const MM_TO_PX = 96 / 25.4;
+
+function estimateMm(mm: number): number {
+  return mm * MM_TO_PX;
+}
 
 function measureMm(mm: number): number {
-  if (typeof document === "undefined") return mm * 3.7795275591;
   const probe = document.createElement("div");
   probe.style.position = "absolute";
   probe.style.visibility = "hidden";
@@ -114,11 +119,13 @@ function computePageStarts(
 export function A4PreviewShell({ children }: { children: ReactNode }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [pageWidthPx, setPageWidthPx] = useState(() => measureMm(A4_WIDTH_MM));
+  // Deterministic estimates only — real mm→px happens in useEffect after mount
+  // so SSR HTML matches the first client render (avoids hydration mismatches).
+  const [pageWidthPx, setPageWidthPx] = useState(() => estimateMm(A4_WIDTH_MM));
   const [pageHeightPx, setPageHeightPx] = useState(() =>
-    measureMm(A4_HEIGHT_MM),
+    estimateMm(A4_HEIGHT_MM),
   );
-  const [padPx, setPadPx] = useState(() => measureMm(PAGE_PAD_MM));
+  const [padPx, setPadPx] = useState(() => estimateMm(PAGE_PAD_MM));
   const [pageStarts, setPageStarts] = useState<number[]>([0]);
   const [scale, setScale] = useState(1);
 
@@ -175,8 +182,8 @@ export function A4PreviewShell({ children }: { children: ReactNode }) {
       <div
         className="a4-preview-fit mx-auto"
         style={{
-          height: unscaledStackHeight * scale,
-          width: pageWidthPx * scale,
+          height: `${Math.round(unscaledStackHeight * scale)}px`,
+          width: `${Math.round(pageWidthPx * scale)}px`,
         }}
       >
         <div
@@ -190,8 +197,7 @@ export function A4PreviewShell({ children }: { children: ReactNode }) {
           {pageStarts.map((startPx, index) => {
             const nextStart = pageStarts[index + 1];
             const padTopPx = index === 0 ? 0 : padPx;
-            const padBottomPx = padPx;
-            const maxSlice = pageHeightPx - padTopPx - padBottomPx;
+            const maxSlice = pageHeightPx - padTopPx - padPx;
             const rawSlice =
               nextStart != null ? nextStart - startPx : maxSlice;
             const slicePx = Math.max(0, Math.min(maxSlice, rawSlice));
@@ -209,8 +215,8 @@ export function A4PreviewShell({ children }: { children: ReactNode }) {
                 <div
                   className="a4-preview-page-clip absolute inset-x-0 overflow-hidden"
                   style={{
-                    top: padTopPx,
-                    height: slicePx,
+                    top: `${Math.round(padTopPx)}px`,
+                    height: `${Math.round(slicePx)}px`,
                   }}
                 >
                   <div

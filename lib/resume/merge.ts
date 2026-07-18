@@ -1,4 +1,5 @@
-import type { MasterResume, Provenance } from "@/lib/resume/schema";
+import type { MasterResume, Provenance, ResumePatch } from "@/lib/resume/schema";
+import { isItemDeleteMarker } from "@/lib/resume/schema";
 import { computeCompleteness } from "@/lib/resume/completeness";
 
 function isUserConfirmed(provenance: Provenance) {
@@ -184,6 +185,10 @@ export function mergeMasterResume(
       ...(base.references ?? []),
       ...(incoming.references ?? []),
     ].filter((r, i, arr) => arr.findIndex((x) => x.id === r.id) === i),
+    hobbies: [
+      ...(base.hobbies ?? []),
+      ...(incoming.hobbies ?? []),
+    ].filter((h, i, arr) => arr.findIndex((x) => x.id === h.id) === i),
     meta: {
       ...base.meta,
       schemaVersion: 1,
@@ -198,17 +203,21 @@ export function mergeMasterResume(
 
 export function applyConfirmedPatch(
   base: MasterResume,
-  patch: Partial<MasterResume>,
+  patch: ResumePatch,
 ): MasterResume {
   const mergeItemsById = <T extends { id: string }>(
     current: T[],
-    incoming: T[] | undefined,
+    incoming: Array<T | { id: string; _delete: true }> | undefined,
   ): T[] => {
     if (incoming === undefined) return current;
     const byId = new Map(current.map((item) => [item.id, item]));
     for (const item of incoming) {
+      if (isItemDeleteMarker(item)) {
+        byId.delete(item.id);
+        continue;
+      }
       const prev = byId.get(item.id);
-      byId.set(item.id, prev ? { ...prev, ...item } : item);
+      byId.set(item.id, prev ? { ...prev, ...item } : (item as T));
     }
     return Array.from(byId.values());
   };
@@ -226,6 +235,7 @@ export function applyConfirmedPatch(
       patch.certifications,
     ),
     references: mergeItemsById(base.references ?? [], patch.references),
+    hobbies: mergeItemsById(base.hobbies ?? [], patch.hobbies),
     meta: {
       ...base.meta,
       ...patch.meta,
@@ -248,6 +258,7 @@ export function applyConfirmedPatch(
   next.projects = upgrade(next.projects);
   next.certifications = upgrade(next.certifications ?? []);
   next.references = upgrade(next.references ?? []);
+  next.hobbies = upgrade(next.hobbies ?? []);
 
   const completeness = computeCompleteness(next);
   next.meta.gaps = completeness.gaps;

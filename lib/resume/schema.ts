@@ -92,6 +92,14 @@ export const referenceItemSchema = z.object({
   sourceRefs: z.array(z.string()).optional(),
 });
 
+export const hobbyItemSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  provenance: provenanceSchema.default("user"),
+  sourceRefs: z.array(z.string()).optional(),
+});
+
 export const gapSchema = z.object({
   section: z.string(),
   path: z.string().optional(),
@@ -120,6 +128,7 @@ export const masterResumeSchema = z.object({
   projects: z.array(projectItemSchema).default([]),
   certifications: z.array(certificationItemSchema).default([]),
   references: z.array(referenceItemSchema).default([]),
+  hobbies: z.array(hobbyItemSchema).default([]),
   meta: z.object({
     schemaVersion: z.number().int().min(1),
     gaps: z.array(gapSchema).default([]),
@@ -130,5 +139,70 @@ export const masterResumeSchema = z.object({
 export type MasterResume = z.infer<typeof masterResumeSchema>;
 export type ResumeGap = z.infer<typeof gapSchema>;
 
-export const resumePatchSchema = masterResumeSchema.partial();
+/** Marker used in patches to remove an item by id (and its nested children). */
+export const itemDeleteMarkerSchema = z.object({
+  id: z.string(),
+  _delete: z.literal(true),
+});
+
+export type ItemDeleteMarker = z.infer<typeof itemDeleteMarkerSchema>;
+
+const patchExperienceItemSchema = z.union([
+  experienceItemSchema,
+  itemDeleteMarkerSchema,
+]);
+const patchEducationItemSchema = z.union([
+  educationItemSchema,
+  itemDeleteMarkerSchema,
+]);
+const patchSkillItemSchema = z.union([skillItemSchema, itemDeleteMarkerSchema]);
+const patchProjectItemSchema = z.union([
+  projectItemSchema,
+  itemDeleteMarkerSchema,
+]);
+const patchCertificationItemSchema = z.union([
+  certificationItemSchema,
+  itemDeleteMarkerSchema,
+]);
+const patchReferenceItemSchema = z.union([
+  referenceItemSchema,
+  itemDeleteMarkerSchema,
+]);
+const patchHobbyItemSchema = z.union([hobbyItemSchema, itemDeleteMarkerSchema]);
+
+export const resumePatchSchema = z.object({
+  identity: masterResumeSchema.shape.identity.partial().optional(),
+  summary: z.string().optional(),
+  experience: z.array(patchExperienceItemSchema).optional(),
+  education: z.array(patchEducationItemSchema).optional(),
+  skills: z.array(patchSkillItemSchema).optional(),
+  projects: z.array(patchProjectItemSchema).optional(),
+  certifications: z.array(patchCertificationItemSchema).optional(),
+  references: z.array(patchReferenceItemSchema).optional(),
+  hobbies: z.array(patchHobbyItemSchema).optional(),
+  meta: masterResumeSchema.shape.meta.partial().optional(),
+});
+
 export type ResumePatch = z.infer<typeof resumePatchSchema>;
+
+export function isItemDeleteMarker(
+  item: unknown,
+): item is ItemDeleteMarker {
+  return (
+    !!item &&
+    typeof item === "object" &&
+    "_delete" in item &&
+    (item as ItemDeleteMarker)._delete === true &&
+    typeof (item as ItemDeleteMarker).id === "string"
+  );
+}
+
+export function deleteItemMarker(id: string): ItemDeleteMarker {
+  return { id, _delete: true };
+}
+
+export function deleteItemsMarkers(
+  items: Array<{ id: string }>,
+): ItemDeleteMarker[] {
+  return items.map((item) => deleteItemMarker(item.id));
+}

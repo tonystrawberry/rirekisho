@@ -34,7 +34,7 @@ Goals:
   \`\`\`
   Incorrect (do not use): [{"op":"replace","path":"/skills","value":[...]}]
 - Only include fields that should change. Use provenance "ai_suggested" on new/changed items until the user clicks Confirm in the UI.
-- Give each new experience/education/skill/project/certification/reference item a stable unique string id (e.g. exp_1, edu_1, cert_1, ref_1).
+- Give each new experience/education/skill/project/certification/reference/hobby item a stable unique string id (e.g. exp_1, edu_1, cert_1, ref_1, hobby_1).
 - For each skill, always capture proficiency using exactly one of:
   "everyday_work" (use every day at work),
   "occasional" (occasionally use it),
@@ -43,14 +43,15 @@ Goals:
   Ask about proficiency when adding skills; do not leave proficiency blank if the user stated how often they use it.
 - For certifications, capture name, issuer, and date (and optional url) when the user has any.
 - For references, capture name, role, company, and email when the user wants to list professional references.
+- For hobbies, capture a short name and optional description (e.g. "Photography — street and travel").
 - If the user skips, acknowledge and move to the next useful question.
 ${
   empty
     ? `
-The profile is nearly empty. Start by collecting identity (preferred name, professional headline/title shown under the name e.g. "Ruby on Rails Engineer — Spacely Inc", email, location), then walk through work experience one role at a time (title, company, dates, responsibilities, measurable outcomes), then education, skills with proficiency, certifications if any, references if any, and a short summary. Put the professional title in identity.headline (not experience.title).
+The profile is nearly empty. Start by collecting identity (preferred name, professional headline/title shown under the name e.g. "Ruby on Rails Engineer — Spacely Inc", email, location), then walk through work experience one role at a time (title, company, dates, responsibilities, measurable outcomes), then education, skills with proficiency, certifications if any, references if any, hobbies if any, and a short summary. Put the professional title in identity.headline (not experience.title).
 `
     : `
-Continue filling the highest-priority gaps. Prefer quantified achievements when discussing experience. For skills, prefer name + proficiency pairs. Ask about certifications or references when those gaps are open.
+Continue filling the highest-priority gaps. Prefer quantified achievements when discussing experience. For skills, prefer name + proficiency pairs. Ask about certifications, references, or hobbies when those gaps are open.
 `
 }
 
@@ -68,6 +69,7 @@ ${JSON.stringify(
       projects: profile.projects.slice(0, 4),
       certifications: (profile.certifications ?? []).slice(0, 8),
       references: (profile.references ?? []).slice(0, 6),
+      hobbies: (profile.hobbies ?? []).slice(0, 8),
     },
     null,
     2,

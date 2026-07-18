@@ -62,9 +62,46 @@ const translateTextSchema = z.object({
       company: z.string().optional(),
     }),
   ),
+  hobbies: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+    }),
+  ),
 });
 
-type TranslateTextPayload = z.infer<typeof translateTextSchema>;
+export type TranslateTextPayload = z.infer<typeof translateTextSchema>;
+
+/** Partial payload — only sections/items that changed. */
+export const translateDeltaSchema = z.object({
+  identity: z
+    .object({
+      fullName: z.string().optional(),
+      headline: z.string().optional(),
+      phone: z.string().optional(),
+      location: z.string().optional(),
+    })
+    .optional(),
+  summary: z.string().optional(),
+  experience: translateTextSchema.shape.experience.optional(),
+  education: translateTextSchema.shape.education.optional(),
+  skills: translateTextSchema.shape.skills.optional(),
+  projects: translateTextSchema.shape.projects.optional(),
+  certifications: translateTextSchema.shape.certifications.optional(),
+  references: translateTextSchema.shape.references.optional(),
+  hobbies: translateTextSchema.shape.hobbies.optional(),
+});
+
+export type TranslateTextDelta = z.infer<typeof translateDeltaSchema>;
+
+function byId<T extends { id: string }>(items: T[]) {
+  return new Map(items.map((i) => [i.id, i]));
+}
+
+function jsonEq(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 /** Strip media URLs and non-translatable fields before calling the LLM. */
 export function toTranslateTextPayload(data: MasterResume): TranslateTextPayload {
@@ -113,7 +150,386 @@ export function toTranslateTextPayload(data: MasterResume): TranslateTextPayload
       ...(r.role ? { role: r.role } : {}),
       ...(r.company ? { company: r.company } : {}),
     })),
+    hobbies: (data.hobbies ?? []).map((h) => ({
+      id: h.id,
+      name: h.name,
+      ...(h.description ? { description: h.description } : {}),
+    })),
   };
+}
+
+/**
+ * Diff two master resumes into a minimal text payload for the LLM.
+ * Non-text changes (dates, logos, emails, proficiency) produce an empty delta.
+ */
+export function buildTranslateDelta(
+  before: MasterResume,
+  after: MasterResume,
+): TranslateTextDelta {
+  const beforeText = toTranslateTextPayload(before);
+  const afterText = toTranslateTextPayload(after);
+  const delta: TranslateTextDelta = {};
+
+  const identity: NonNullable<TranslateTextDelta["identity"]> = {};
+  if (beforeText.identity.fullName !== afterText.identity.fullName) {
+    identity.fullName = afterText.identity.fullName;
+  }
+  if (beforeText.identity.headline !== afterText.identity.headline) {
+    if (afterText.identity.headline) identity.headline = afterText.identity.headline;
+    else identity.headline = "";
+  }
+  if (beforeText.identity.phone !== afterText.identity.phone) {
+    if (afterText.identity.phone) identity.phone = afterText.identity.phone;
+    else identity.phone = "";
+  }
+  if (beforeText.identity.location !== afterText.identity.location) {
+    if (afterText.identity.location) identity.location = afterText.identity.location;
+    else identity.location = "";
+  }
+  if (Object.keys(identity).length) delta.identity = identity;
+
+  if ((beforeText.summary ?? "") !== (afterText.summary ?? "")) {
+    delta.summary = afterText.summary ?? "";
+  }
+
+  const prevExp = byId(beforeText.experience);
+  const changedExp = afterText.experience.filter((e) => {
+    const prev = prevExp.get(e.id);
+    return !prev || !jsonEq(prev, e);
+  });
+  if (changedExp.length) delta.experience = changedExp;
+
+  const prevEdu = byId(beforeText.education);
+  const changedEdu = afterText.education.filter((e) => {
+    const prev = prevEdu.get(e.id);
+    return !prev || !jsonEq(prev, e);
+  });
+  if (changedEdu.length) delta.education = changedEdu;
+
+  const prevSkills = byId(beforeText.skills);
+  const changedSkills = afterText.skills.filter((s) => {
+    const prev = prevSkills.get(s.id);
+    return !prev || !jsonEq(prev, s);
+  });
+  if (changedSkills.length) delta.skills = changedSkills;
+
+  const prevProjects = byId(beforeText.projects);
+  const changedProjects = afterText.projects.filter((p) => {
+    const prev = prevProjects.get(p.id);
+    return !prev || !jsonEq(prev, p);
+  });
+  if (changedProjects.length) delta.projects = changedProjects;
+
+  const prevCerts = byId(beforeText.certifications);
+  const changedCerts = afterText.certifications.filter((c) => {
+    const prev = prevCerts.get(c.id);
+    return !prev || !jsonEq(prev, c);
+  });
+  if (changedCerts.length) delta.certifications = changedCerts;
+
+  const prevRefs = byId(beforeText.references);
+  const changedRefs = afterText.references.filter((r) => {
+    const prev = prevRefs.get(r.id);
+    return !prev || !jsonEq(prev, r);
+  });
+  if (changedRefs.length) delta.references = changedRefs;
+
+  const prevHobbies = byId(beforeText.hobbies);
+  const changedHobbies = afterText.hobbies.filter((h) => {
+    const prev = prevHobbies.get(h.id);
+    return !prev || !jsonEq(prev, h);
+  });
+  if (changedHobbies.length) delta.hobbies = changedHobbies;
+
+  return delta;
+}
+
+export function hasTranslatableDelta(delta: TranslateTextDelta): boolean {
+  if (delta.identity && Object.keys(delta.identity).length) return true;
+  if (delta.summary !== undefined) return true;
+  if (delta.experience?.length) return true;
+  if (delta.education?.length) return true;
+  if (delta.skills?.length) return true;
+  if (delta.projects?.length) return true;
+  if (delta.certifications?.length) return true;
+  if (delta.references?.length) return true;
+  if (delta.hobbies?.length) return true;
+  return false;
+}
+
+/**
+ * Keep translated text from the locale copy where possible, but take structure
+ * and non-text fields (dates, logos, emails, proficiency) from the source.
+ */
+export function alignLocaleToSource(
+  locale: MasterResume,
+  source: MasterResume,
+): MasterResume {
+  const locExp = byId(locale.experience);
+  const locEdu = byId(locale.education);
+  const locSkills = byId(locale.skills);
+  const locProjects = byId(locale.projects);
+  const locCerts = byId(locale.certifications ?? []);
+  const locRefs = byId(locale.references ?? []);
+  const locHobbies = byId(locale.hobbies ?? []);
+
+  return {
+    ...source,
+    identity: {
+      ...source.identity,
+      fullName: locale.identity.fullName || source.identity.fullName,
+      headline: locale.identity.headline ?? source.identity.headline,
+      phone: locale.identity.phone ?? source.identity.phone,
+      location: locale.identity.location ?? source.identity.location,
+    },
+    summary: source.summary?.trim()
+      ? locale.summary?.trim()
+        ? locale.summary
+        : source.summary
+      : source.summary,
+    experience: source.experience.map((e) => {
+      const l = locExp.get(e.id);
+      if (!l) return e;
+      return {
+        ...e,
+        company: l.company,
+        title: l.title,
+        location: l.location ?? e.location,
+        bullets: l.bullets,
+        metrics: l.metrics,
+      };
+    }),
+    education: source.education.map((e) => {
+      const l = locEdu.get(e.id);
+      if (!l) return e;
+      return {
+        ...e,
+        institution: l.institution,
+        degree: l.degree ?? e.degree,
+        field: l.field ?? e.field,
+        bullets: l.bullets ?? e.bullets,
+      };
+    }),
+    skills: source.skills.map((s) => {
+      const l = locSkills.get(s.id);
+      if (!l) return s;
+      return {
+        ...s,
+        name: l.name,
+        category: l.category ?? s.category,
+      };
+    }),
+    projects: source.projects.map((p) => {
+      const l = locProjects.get(p.id);
+      if (!l) return p;
+      return {
+        ...p,
+        name: l.name,
+        description: l.description ?? p.description,
+        highlights: l.highlights,
+      };
+    }),
+    certifications: (source.certifications ?? []).map((c) => {
+      const l = locCerts.get(c.id);
+      if (!l) return c;
+      return {
+        ...c,
+        name: l.name,
+        issuer: l.issuer ?? c.issuer,
+      };
+    }),
+    references: (source.references ?? []).map((r) => {
+      const l = locRefs.get(r.id);
+      if (!l) return r;
+      return {
+        ...r,
+        name: l.name,
+        role: l.role ?? r.role,
+        company: l.company ?? r.company,
+      };
+    }),
+    hobbies: (source.hobbies ?? []).map((h) => {
+      const l = locHobbies.get(h.id);
+      if (!l) return h;
+      return {
+        ...h,
+        name: l.name,
+        description: l.description ?? h.description,
+      };
+    }),
+  };
+}
+
+/** Overlay a translated delta onto an already-aligned locale resume. */
+export function applyTranslatedDelta(
+  locale: MasterResume,
+  translated: TranslateTextDelta,
+): MasterResume {
+  let next = locale;
+
+  if (translated.identity) {
+    next = {
+      ...next,
+      identity: {
+        ...next.identity,
+        ...(translated.identity.fullName !== undefined
+          ? {
+              fullName:
+                translated.identity.fullName.trim() || next.identity.fullName,
+            }
+          : {}),
+        ...(translated.identity.headline !== undefined
+          ? {
+              headline: translated.identity.headline.trim()
+                ? translated.identity.headline
+                : undefined,
+            }
+          : {}),
+        ...(translated.identity.phone !== undefined
+          ? {
+              phone: translated.identity.phone.trim()
+                ? translated.identity.phone
+                : undefined,
+            }
+          : {}),
+        ...(translated.identity.location !== undefined
+          ? {
+              location: translated.identity.location.trim()
+                ? translated.identity.location
+                : undefined,
+            }
+          : {}),
+      },
+    };
+  }
+
+  if (translated.summary !== undefined) {
+    next = {
+      ...next,
+      summary: translated.summary.trim() ? translated.summary : "",
+    };
+  }
+
+  if (translated.experience?.length) {
+    const t = byId(translated.experience);
+    next = {
+      ...next,
+      experience: next.experience.map((e) => {
+        const tr = t.get(e.id);
+        if (!tr) return e;
+        return {
+          ...e,
+          company: tr.company,
+          title: tr.title,
+          location: tr.location ?? e.location,
+          bullets: tr.bullets,
+          metrics: tr.metrics,
+        };
+      }),
+    };
+  }
+
+  if (translated.education?.length) {
+    const t = byId(translated.education);
+    next = {
+      ...next,
+      education: next.education.map((e) => {
+        const tr = t.get(e.id);
+        if (!tr) return e;
+        return {
+          ...e,
+          institution: tr.institution,
+          degree: tr.degree ?? e.degree,
+          field: tr.field ?? e.field,
+          bullets: tr.bullets ?? e.bullets,
+        };
+      }),
+    };
+  }
+
+  if (translated.skills?.length) {
+    const t = byId(translated.skills);
+    next = {
+      ...next,
+      skills: next.skills.map((s) => {
+        const tr = t.get(s.id);
+        if (!tr) return s;
+        return {
+          ...s,
+          name: tr.name,
+          category: tr.category ?? s.category,
+        };
+      }),
+    };
+  }
+
+  if (translated.projects?.length) {
+    const t = byId(translated.projects);
+    next = {
+      ...next,
+      projects: next.projects.map((p) => {
+        const tr = t.get(p.id);
+        if (!tr) return p;
+        return {
+          ...p,
+          name: tr.name,
+          description: tr.description ?? p.description,
+          highlights: tr.highlights,
+        };
+      }),
+    };
+  }
+
+  if (translated.certifications?.length) {
+    const t = byId(translated.certifications);
+    next = {
+      ...next,
+      certifications: (next.certifications ?? []).map((c) => {
+        const tr = t.get(c.id);
+        if (!tr) return c;
+        return {
+          ...c,
+          name: tr.name,
+          issuer: tr.issuer ?? c.issuer,
+        };
+      }),
+    };
+  }
+
+  if (translated.references?.length) {
+    const t = byId(translated.references);
+    next = {
+      ...next,
+      references: (next.references ?? []).map((r) => {
+        const tr = t.get(r.id);
+        if (!tr) return r;
+        return {
+          ...r,
+          name: tr.name,
+          role: tr.role ?? r.role,
+          company: tr.company ?? r.company,
+        };
+      }),
+    };
+  }
+
+  if (translated.hobbies?.length) {
+    const t = byId(translated.hobbies);
+    next = {
+      ...next,
+      hobbies: (next.hobbies ?? []).map((h) => {
+        const tr = t.get(h.id);
+        if (!tr) return h;
+        return {
+          ...h,
+          name: tr.name,
+          description: tr.description ?? h.description,
+        };
+      }),
+    };
+  }
+
+  return next;
 }
 
 function extractJsonObject(text: string): unknown {
@@ -132,89 +548,179 @@ export function applyTranslatedText(
   source: MasterResume,
   translated: TranslateTextPayload,
 ): MasterResume {
-  const byId = <T extends { id: string }>(items: T[]) =>
-    new Map(items.map((i) => [i.id, i]));
+  return applyTranslatedDelta(source, {
+    identity: translated.identity,
+    // Full translate: never let an empty LLM string wipe the source summary.
+    summary: translated.summary?.trim() ? translated.summary : source.summary,
+    experience: translated.experience,
+    education: translated.education,
+    skills: translated.skills,
+    projects: translated.projects,
+    certifications: translated.certifications,
+    references: translated.references,
+    hobbies: translated.hobbies,
+  });
+}
 
-  const tExp = byId(translated.experience);
-  const tEdu = byId(translated.education);
-  const tSkills = byId(translated.skills);
-  const tProjects = byId(translated.projects);
-  const tCerts = byId(translated.certifications);
-  const tRefs = byId(translated.references);
+function demoTranslateDelta(
+  delta: TranslateTextDelta,
+  locale: string,
+): TranslateTextDelta {
+  const prefix = locale.startsWith("ja")
+    ? "【訳】"
+    : locale.startsWith("fr")
+      ? "[TR] "
+      : "";
+  if (!prefix) return delta;
+
+  const wrap = (s: string) => (s ? `${prefix}${s}` : s);
 
   return {
-    ...source,
-    identity: {
-      ...source.identity,
-      fullName: translated.identity.fullName || source.identity.fullName,
-      headline: translated.identity.headline ?? source.identity.headline,
-      phone: translated.identity.phone ?? source.identity.phone,
-      location: translated.identity.location ?? source.identity.location,
-    },
-    summary: translated.summary ?? source.summary,
-    experience: source.experience.map((e) => {
-      const t = tExp.get(e.id);
-      if (!t) return e;
-      return {
-        ...e,
-        company: t.company,
-        title: t.title,
-        location: t.location ?? e.location,
-        bullets: t.bullets,
-        metrics: t.metrics,
-      };
-    }),
-    education: source.education.map((e) => {
-      const t = tEdu.get(e.id);
-      if (!t) return e;
-      return {
-        ...e,
-        institution: t.institution,
-        degree: t.degree ?? e.degree,
-        field: t.field ?? e.field,
-        bullets: t.bullets ?? e.bullets,
-      };
-    }),
-    skills: source.skills.map((s) => {
-      const t = tSkills.get(s.id);
-      if (!t) return s;
-      return {
-        ...s,
-        name: t.name,
-        category: t.category ?? s.category,
-      };
-    }),
-    projects: source.projects.map((p) => {
-      const t = tProjects.get(p.id);
-      if (!t) return p;
-      return {
-        ...p,
-        name: t.name,
-        description: t.description ?? p.description,
-        highlights: t.highlights,
-      };
-    }),
-    certifications: (source.certifications ?? []).map((c) => {
-      const t = tCerts.get(c.id);
-      if (!t) return c;
-      return {
-        ...c,
-        name: t.name,
-        issuer: t.issuer ?? c.issuer,
-      };
-    }),
-    references: (source.references ?? []).map((r) => {
-      const t = tRefs.get(r.id);
-      if (!t) return r;
-      return {
-        ...r,
-        name: t.name,
-        role: t.role ?? r.role,
-        company: t.company ?? r.company,
-        // email stays from source (not sent to LLM)
-      };
-    }),
+    ...delta,
+    ...(delta.identity
+      ? {
+          identity: {
+            ...delta.identity,
+            ...(delta.identity.fullName !== undefined
+              ? { fullName: wrap(delta.identity.fullName) }
+              : {}),
+            ...(delta.identity.headline !== undefined
+              ? { headline: wrap(delta.identity.headline) }
+              : {}),
+            ...(delta.identity.location !== undefined
+              ? { location: wrap(delta.identity.location) }
+              : {}),
+          },
+        }
+      : {}),
+    ...(delta.summary !== undefined
+      ? {
+          summary: delta.summary
+            ? locale.startsWith("ja")
+              ? `【翻訳デモ】${delta.summary}`
+              : `[Démo FR] ${delta.summary}`
+            : "",
+        }
+      : {}),
+    ...(delta.experience
+      ? {
+          experience: delta.experience.map((e) => ({
+            ...e,
+            company: wrap(e.company),
+            title: wrap(e.title),
+            ...(e.location ? { location: wrap(e.location) } : {}),
+            bullets: e.bullets.map(wrap),
+            metrics: e.metrics.map(wrap),
+          })),
+        }
+      : {}),
+    ...(delta.education
+      ? {
+          education: delta.education.map((e) => ({
+            ...e,
+            institution: wrap(e.institution),
+            ...(e.degree ? { degree: wrap(e.degree) } : {}),
+            ...(e.field ? { field: wrap(e.field) } : {}),
+            ...(e.bullets ? { bullets: e.bullets.map(wrap) } : {}),
+          })),
+        }
+      : {}),
+    ...(delta.skills
+      ? {
+          skills: delta.skills.map((s) => ({
+            ...s,
+            name: wrap(s.name),
+            ...(s.category ? { category: wrap(s.category) } : {}),
+          })),
+        }
+      : {}),
+    ...(delta.projects
+      ? {
+          projects: delta.projects.map((p) => ({
+            ...p,
+            name: wrap(p.name),
+            ...(p.description ? { description: wrap(p.description) } : {}),
+            highlights: p.highlights.map(wrap),
+          })),
+        }
+      : {}),
+    ...(delta.certifications
+      ? {
+          certifications: delta.certifications.map((c) => ({
+            ...c,
+            name: wrap(c.name),
+            ...(c.issuer ? { issuer: wrap(c.issuer) } : {}),
+          })),
+        }
+      : {}),
+    ...(delta.references
+      ? {
+          references: delta.references.map((r) => ({
+            ...r,
+            name: wrap(r.name),
+            ...(r.role ? { role: wrap(r.role) } : {}),
+            ...(r.company ? { company: wrap(r.company) } : {}),
+          })),
+        }
+      : {}),
+    ...(delta.hobbies
+      ? {
+          hobbies: delta.hobbies.map((h) => ({
+            ...h,
+            name: wrap(h.name),
+            ...(h.description ? { description: wrap(h.description) } : {}),
+          })),
+        }
+      : {}),
   };
+}
+
+/** Translate only the changed fragment and return the same shape. */
+export async function translateTextDelta(
+  delta: TranslateTextDelta,
+  locale: string,
+): Promise<TranslateTextDelta> {
+  if (locale === "en" || !hasTranslatableDelta(delta)) return delta;
+
+  if (!hasLlmKey()) {
+    return demoTranslateDelta(delta, locale);
+  }
+
+  const language = localeLanguageName(locale);
+  const { text } = await generateText({
+    model: getChatModel(),
+    prompt: `You are a professional resume translator. Translate the following resume JSON fragment into ${language}.
+
+Rules:
+- Return ONLY a JSON object with the same shape and the same "id" values.
+- Translate user-facing text only. Keep empty strings empty.
+- Do not invent new fields, items, or content.
+- Do not add URLs, emails, dates, or image paths.
+
+Fragment JSON:
+${JSON.stringify(delta)}`,
+  });
+
+  return translateDeltaSchema.parse(extractJsonObject(text));
+}
+
+/**
+ * Patch an existing locale presentation with a source diff.
+ * Returns null when there is nothing to write (caller may still bump version).
+ */
+export async function applySourceDiffToLocale(params: {
+  localeData: MasterResume;
+  previousSource: MasterResume;
+  nextSource: MasterResume;
+  locale: string;
+}): Promise<MasterResume> {
+  const { localeData, previousSource, nextSource, locale } = params;
+  const aligned = alignLocaleToSource(localeData, nextSource);
+  const delta = buildTranslateDelta(previousSource, nextSource);
+  if (!hasTranslatableDelta(delta)) return aligned;
+
+  const translated = await translateTextDelta(delta, locale);
+  return applyTranslatedDelta(aligned, translated);
 }
 
 export async function translateMasterResume(
@@ -223,34 +729,14 @@ export async function translateMasterResume(
 ): Promise<MasterResume> {
   if (locale === "en") return data;
 
+  const fullDelta = toTranslateTextPayload(data);
   if (!hasLlmKey()) {
-    if (locale.startsWith("ja")) {
-      return {
-        ...data,
-        summary: data.summary ? `【翻訳デモ】${data.summary}` : data.summary,
-        experience: data.experience.map((e) => ({
-          ...e,
-          bullets: e.bullets.map((b) => `【訳】${b}`),
-          metrics: e.metrics.map((m) => `【訳】${m}`),
-        })),
-      };
-    }
-    if (locale.startsWith("fr")) {
-      return {
-        ...data,
-        summary: data.summary ? `[Démo FR] ${data.summary}` : data.summary,
-        experience: data.experience.map((e) => ({
-          ...e,
-          bullets: e.bullets.map((b) => `[TR] ${b}`),
-          metrics: e.metrics.map((m) => `[TR] ${m}`),
-        })),
-      };
-    }
-    return data;
+    const translated = await translateTextDelta(fullDelta, locale);
+    return applyTranslatedDelta(data, translated);
   }
 
   const language = localeLanguageName(locale);
-  const textPayload = toTranslateTextPayload(data);
+  const textPayload = fullDelta;
 
   const { text } = await generateText({
     model: getChatModel(),
@@ -258,7 +744,7 @@ export async function translateMasterResume(
 
 Rules:
 - Return ONLY a JSON object with the same shape and the same "id" values.
-- Translate user-facing text (names of roles/schools when natural, summary, bullets, metrics, skills, projects, certifications, references role/company/name, location).
+- Translate user-facing text (names of roles/schools when natural, summary, bullets, metrics, skills, projects, certifications, references role/company/name, hobbies name/description, location).
 - Do not invent new fields or content.
 - Do not add URLs, emails, dates, or image paths — they are omitted on purpose.
 

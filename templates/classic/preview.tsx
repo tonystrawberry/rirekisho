@@ -1,9 +1,19 @@
 "use client";
 
 import { skillProficiencyLabel } from "@/lib/resume/skill-proficiency";
+import { sectionLabel } from "@/lib/resume/section-labels";
+import {
+  deleteItemMarker,
+  deleteItemsMarkers,
+} from "@/lib/resume/schema";
 import { EntryLogoSlot } from "@/components/profile/entry-logo-slot";
 import { ProfilePhotoSlot } from "@/components/profile/profile-photo-slot";
 import { InlineText } from "@/components/preview/inline-text";
+import {
+  DeletablePreviewBlock,
+  PreviewDeleteButton,
+  PreviewSectionTitle,
+} from "@/components/preview/preview-delete";
 import { ProjectSection } from "@/templates/shared/project-section";
 import type { ResumePreviewProps } from "@/templates/shared/preview-props";
 
@@ -17,6 +27,8 @@ export function ClassicPreview({
   onPatch,
 }: ResumePreviewProps) {
   const canEdit = Boolean(textEditable && onPatch);
+  const t = (section: Parameters<typeof sectionLabel>[0]) =>
+    sectionLabel(section, locale);
 
   return (
     <article className="w-full bg-white p-8 text-foreground">
@@ -103,9 +115,12 @@ export function ClassicPreview({
 
       {(data.summary || canEdit) ? (
         <section data-resume-block className="resume-section mt-6">
-          <h2 className="resume-theme-heading text-sm font-semibold uppercase tracking-wide">
-            Summary
-          </h2>
+          <PreviewSectionTitle
+            title={t("summary")}
+            canEdit={canEdit && Boolean(data.summary?.trim())}
+            onDeleteSection={() => onPatch?.({ summary: "" })}
+            className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
+          />
           <InlineText
             as="p"
             multiline
@@ -120,16 +135,27 @@ export function ClassicPreview({
       ) : null}
 
       <section className="resume-section mt-6">
-        <h2
-          data-resume-block
-          data-resume-keep-with-next
+        <PreviewSectionTitle
+          title={t("experience")}
+          keepWithNext
+          canEdit={canEdit && data.experience.length > 0}
+          onDeleteSection={() =>
+            onPatch?.({ experience: deleteItemsMarkers(data.experience) })
+          }
           className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-        >
-          Experience
-        </h2>
+        />
         <div className="mt-3 space-y-4">
           {data.experience.map((exp) => (
-            <div key={exp.id} data-resume-block className="flex gap-3">
+            <DeletablePreviewBlock
+              key={exp.id}
+              canEdit={canEdit}
+              label="Remove experience"
+              onDelete={() =>
+                onPatch?.({ experience: [deleteItemMarker(exp.id)] })
+              }
+              className="flex gap-3"
+            >
+              <div data-resume-block className="flex w-full gap-3">
               <EntryLogoSlot
                 profileId={profileId}
                 section="experience"
@@ -140,7 +166,7 @@ export function ClassicPreview({
                 className="mt-0.5"
               />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 pr-5">
                   <p className="font-medium">
                     <InlineText
                       value={exp.title}
@@ -208,50 +234,87 @@ export function ClassicPreview({
                 </div>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
                   {exp.bullets.map((b, i) => (
-                    <li key={`b-${i}`}>
-                      <InlineText
-                        as="span"
-                        value={b}
-                        editable={canEdit}
-                        className="inline"
-                        placeholder="Bullet point"
-                        onCommit={(next) => {
-                          const bullets = [...exp.bullets];
-                          if (!next.trim()) bullets.splice(i, 1);
-                          else bullets[i] = next;
-                          onPatch?.({
-                            experience: [
-                              { ...exp, bullets, provenance: "user" },
-                            ],
-                          });
-                        }}
-                      />
+                    <li key={`b-${i}`} className="group/bullet">
+                      <span className="inline-flex max-w-full items-start gap-1">
+                        <InlineText
+                          as="span"
+                          value={b}
+                          editable={canEdit}
+                          className="inline"
+                          placeholder="Bullet point"
+                          onCommit={(next) => {
+                            const bullets = [...exp.bullets];
+                            if (!next.trim()) bullets.splice(i, 1);
+                            else bullets[i] = next;
+                            onPatch?.({
+                              experience: [
+                                { ...exp, bullets, provenance: "user" },
+                              ],
+                            });
+                          }}
+                        />
+                        {canEdit ? (
+                          <PreviewDeleteButton
+                            label="Remove bullet"
+                            className="mt-0.5 opacity-0 group-hover/bullet:opacity-100 focus-visible:opacity-100"
+                            onDelete={() => {
+                              const bullets = exp.bullets.filter(
+                                (_, idx) => idx !== i,
+                              );
+                              onPatch?.({
+                                experience: [
+                                  { ...exp, bullets, provenance: "user" },
+                                ],
+                              });
+                            }}
+                          />
+                        ) : null}
+                      </span>
                     </li>
                   ))}
                   {exp.metrics.map((m, i) => (
-                    <li key={`m-${i}`}>
-                      <InlineText
-                        as="span"
-                        value={m}
-                        editable={canEdit}
-                        className="inline"
-                        placeholder="Metric"
-                        onCommit={(next) => {
-                          const metrics = [...exp.metrics];
-                          if (!next.trim()) metrics.splice(i, 1);
-                          else metrics[i] = next;
-                          onPatch?.({
-                            experience: [
-                              { ...exp, metrics, provenance: "user" },
-                            ],
-                          });
-                        }}
-                      />
+                    <li key={`m-${i}`} className="group/bullet">
+                      <span className="inline-flex max-w-full items-start gap-1">
+                        <InlineText
+                          as="span"
+                          value={m}
+                          editable={canEdit}
+                          className="inline"
+                          placeholder="Metric"
+                          onCommit={(next) => {
+                            const metrics = [...exp.metrics];
+                            if (!next.trim()) metrics.splice(i, 1);
+                            else metrics[i] = next;
+                            onPatch?.({
+                              experience: [
+                                { ...exp, metrics, provenance: "user" },
+                              ],
+                            });
+                          }}
+                        />
+                        {canEdit ? (
+                          <PreviewDeleteButton
+                            label="Remove metric"
+                            className="mt-0.5 opacity-0 group-hover/bullet:opacity-100 focus-visible:opacity-100"
+                            onDelete={() => {
+                              const metrics = exp.metrics.filter(
+                                (_, idx) => idx !== i,
+                              );
+                              onPatch?.({
+                                experience: [
+                                  { ...exp, metrics, provenance: "user" },
+                                ],
+                              });
+                            }}
+                          />
+                        ) : null}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
+              </div>
+            </DeletablePreviewBlock>
           ))}
           {!data.experience.length ? (
             <p className="text-sm text-muted">No experience yet.</p>
@@ -261,16 +324,27 @@ export function ClassicPreview({
 
       {data.education.length ? (
         <section className="resume-section mt-6">
-          <h2
-            data-resume-block
-            data-resume-keep-with-next
+          <PreviewSectionTitle
+            title={t("education")}
+            keepWithNext
+            canEdit={canEdit}
+            onDeleteSection={() =>
+              onPatch?.({ education: deleteItemsMarkers(data.education) })
+            }
             className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-          >
-            Education
-          </h2>
+          />
           <div className="mt-3 space-y-3">
             {data.education.map((ed) => (
-              <div key={ed.id} data-resume-block className="flex gap-3">
+              <DeletablePreviewBlock
+                key={ed.id}
+                canEdit={canEdit}
+                label="Remove education"
+                onDelete={() =>
+                  onPatch?.({ education: [deleteItemMarker(ed.id)] })
+                }
+                className="flex gap-3"
+              >
+                <div data-resume-block className="flex w-full gap-3">
                 <EntryLogoSlot
                   profileId={profileId}
                   section="education"
@@ -280,7 +354,7 @@ export function ClassicPreview({
                   onChanged={() => onMediaChanged?.()}
                   className="mt-0.5"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pr-5">
                   <div className="flex flex-wrap justify-between gap-2">
                     <InlineText
                       as="p"
@@ -374,24 +448,27 @@ export function ClassicPreview({
                     />
                   </p>
                 </div>
-              </div>
+                </div>
+              </DeletablePreviewBlock>
             ))}
           </div>
         </section>
       ) : null}
 
       <section className="resume-section mt-6">
-        <h2
-          data-resume-block
-          data-resume-keep-with-next
+        <PreviewSectionTitle
+          title={t("skills")}
+          keepWithNext
+          canEdit={canEdit && data.skills.length > 0}
+          onDeleteSection={() =>
+            onPatch?.({ skills: deleteItemsMarkers(data.skills) })
+          }
           className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-        >
-          Skills
-        </h2>
+        />
         {data.skills.length ? (
           <ul className="mt-2 space-y-1 text-sm">
             {data.skills.map((s) => (
-              <li key={s.id} data-resume-block>
+              <li key={s.id} data-resume-block className="group/del relative pr-5">
                 <InlineText
                   className="font-medium"
                   value={s.name}
@@ -409,6 +486,15 @@ export function ClassicPreview({
                     — {skillProficiencyLabel(s.proficiency, locale)}
                   </span>
                 ) : null}
+                {canEdit ? (
+                  <PreviewDeleteButton
+                    label="Remove skill"
+                    className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
+                    onDelete={() =>
+                      onPatch?.({ skills: [deleteItemMarker(s.id)] })
+                    }
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
@@ -421,13 +507,15 @@ export function ClassicPreview({
 
       {data.projects.length ? (
         <section className="resume-section mt-6">
-          <h2
-            data-resume-block
-            data-resume-keep-with-next
+          <PreviewSectionTitle
+            title={t("projects")}
+            keepWithNext
+            canEdit={canEdit}
+            onDeleteSection={() =>
+              onPatch?.({ projects: deleteItemsMarkers(data.projects) })
+            }
             className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-          >
-            Projects
-          </h2>
+          />
           <div data-resume-block>
             <ProjectSection
               projects={data.projects}
@@ -440,80 +528,93 @@ export function ClassicPreview({
 
       {(data.certifications ?? []).length ? (
         <section className="resume-section mt-6">
-          <h2
-            data-resume-block
-            data-resume-keep-with-next
+          <PreviewSectionTitle
+            title={t("certifications")}
+            keepWithNext
+            canEdit={canEdit}
+            onDeleteSection={() =>
+              onPatch?.({
+                certifications: deleteItemsMarkers(data.certifications ?? []),
+              })
+            }
             className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-          >
-            Certifications
-          </h2>
+          />
           <ul className="mt-2 space-y-2 text-sm">
             {(data.certifications ?? []).map((c) => (
-              <li key={c.id} data-resume-block className="flex gap-2">
-                <EntryLogoSlot
-                  profileId={profileId}
-                  section="certifications"
-                  itemId={c.id}
-                  initialLogoUrl={c.logoUrl}
-                  editable={editable}
-                  onChanged={() => onMediaChanged?.()}
-                />
-                <div className="min-w-0">
-                  <InlineText
-                    className="font-medium"
-                    value={c.name}
-                    editable={canEdit}
-                    placeholder="Certification"
-                    onCommit={(name) =>
-                      onPatch?.({
-                        certifications: [{ ...c, name, provenance: "user" }],
-                      })
-                    }
+              <DeletablePreviewBlock
+                key={c.id}
+                as="li"
+                canEdit={canEdit}
+                label="Remove certification"
+                onDelete={() =>
+                  onPatch?.({ certifications: [deleteItemMarker(c.id)] })
+                }
+                className="flex gap-2 pr-5"
+              >
+                  <EntryLogoSlot
+                    profileId={profileId}
+                    section="certifications"
+                    itemId={c.id}
+                    initialLogoUrl={c.logoUrl}
+                    editable={editable}
+                    onChanged={() => onMediaChanged?.()}
                   />
-                  <span className="text-muted"> — </span>
-                  <InlineText
-                    className="text-muted"
-                    value={c.issuer ?? ""}
-                    editable={canEdit}
-                    emptyLabel="issuer"
-                    placeholder="Issuer"
-                    onCommit={(issuer) =>
-                      onPatch?.({
-                        certifications: [
-                          {
-                            ...c,
-                            issuer: issuer || undefined,
-                            provenance: "user",
-                          },
-                        ],
-                      })
-                    }
-                  />
-                  {(c.date || canEdit) ? (
-                    <>
-                      <span className="text-muted">, </span>
-                      <InlineText
-                        className="text-muted"
-                        value={c.date ?? ""}
-                        editable={canEdit}
-                        emptyLabel="date"
-                        placeholder="YYYY"
-                        onCommit={(date) =>
-                          onPatch?.({
-                            certifications: [
-                              {
-                                ...c,
-                                date: date || undefined,
-                                provenance: "user",
-                              },
-                            ],
-                          })
-                        }
-                      />
-                    </>
-                  ) : null}
-                </div>
-              </li>
+                  <div className="min-w-0" data-resume-block>
+                    <InlineText
+                      className="font-medium"
+                      value={c.name}
+                      editable={canEdit}
+                      placeholder="Certification"
+                      onCommit={(name) =>
+                        onPatch?.({
+                          certifications: [{ ...c, name, provenance: "user" }],
+                        })
+                      }
+                    />
+                    <span className="text-muted"> — </span>
+                    <InlineText
+                      className="text-muted"
+                      value={c.issuer ?? ""}
+                      editable={canEdit}
+                      emptyLabel="issuer"
+                      placeholder="Issuer"
+                      onCommit={(issuer) =>
+                        onPatch?.({
+                          certifications: [
+                            {
+                              ...c,
+                              issuer: issuer || undefined,
+                              provenance: "user",
+                            },
+                          ],
+                        })
+                      }
+                    />
+                    {(c.date || canEdit) ? (
+                      <>
+                        <span className="text-muted">, </span>
+                        <InlineText
+                          className="text-muted"
+                          value={c.date ?? ""}
+                          editable={canEdit}
+                          emptyLabel="date"
+                          placeholder="YYYY"
+                          onCommit={(date) =>
+                            onPatch?.({
+                              certifications: [
+                                {
+                                  ...c,
+                                  date: date || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                      </>
+                    ) : null}
+                  </div>
+              </DeletablePreviewBlock>
             ))}
           </ul>
         </section>
@@ -521,81 +622,195 @@ export function ClassicPreview({
 
       {(data.references ?? []).length ? (
         <section className="resume-section mt-6">
-          <h2
-            data-resume-block
-            data-resume-keep-with-next
+          <PreviewSectionTitle
+            title={t("references")}
+            keepWithNext
+            canEdit={canEdit}
+            onDeleteSection={() =>
+              onPatch?.({
+                references: deleteItemsMarkers(data.references ?? []),
+              })
+            }
             className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
-          >
-            References
-          </h2>
+          />
           <ul className="mt-2 space-y-3 text-sm">
             {(data.references ?? []).map((r) => (
-              <li key={r.id} data-resume-block>
-                <InlineText
-                  as="p"
-                  className="font-medium"
-                  value={r.name}
-                  editable={canEdit}
-                  placeholder="Name"
-                  onCommit={(name) =>
-                    onPatch?.({
-                      references: [{ ...r, name, provenance: "user" }],
-                    })
-                  }
-                />
-                <p className="text-muted">
+              <DeletablePreviewBlock
+                key={r.id}
+                as="li"
+                canEdit={canEdit}
+                label="Remove reference"
+                onDelete={() =>
+                  onPatch?.({ references: [deleteItemMarker(r.id)] })
+                }
+                className="pr-5"
+              >
+                  <div data-resume-block>
                   <InlineText
-                    value={r.role ?? ""}
+                    as="p"
+                    className="font-medium"
+                    value={r.name}
                     editable={canEdit}
-                    emptyLabel="role"
-                    placeholder="Role"
-                    onCommit={(role) =>
+                    placeholder="Name"
+                    onCommit={(name) =>
                       onPatch?.({
-                        references: [
-                          { ...r, role: role || undefined, provenance: "user" },
-                        ],
+                        references: [{ ...r, name, provenance: "user" }],
                       })
                     }
                   />
-                  <span> · </span>
+                  <p className="text-muted">
+                    <InlineText
+                      value={r.role ?? ""}
+                      editable={canEdit}
+                      emptyLabel="role"
+                      placeholder="Role"
+                      onCommit={(role) =>
+                        onPatch?.({
+                          references: [
+                            {
+                              ...r,
+                              role: role || undefined,
+                              provenance: "user",
+                            },
+                          ],
+                        })
+                      }
+                    />
+                    <span> · </span>
+                    <InlineText
+                      value={r.company ?? ""}
+                      editable={canEdit}
+                      emptyLabel="company"
+                      placeholder="Company"
+                      onCommit={(company) =>
+                        onPatch?.({
+                          references: [
+                            {
+                              ...r,
+                              company: company || undefined,
+                              provenance: "user",
+                            },
+                          ],
+                        })
+                      }
+                    />
+                  </p>
                   <InlineText
-                    value={r.company ?? ""}
+                    as="p"
+                    className="text-muted"
+                    value={r.email ?? ""}
                     editable={canEdit}
-                    emptyLabel="company"
-                    placeholder="Company"
-                    onCommit={(company) =>
+                    emptyLabel="email"
+                    placeholder="email@example.com"
+                    onCommit={(email) =>
                       onPatch?.({
                         references: [
                           {
                             ...r,
-                            company: company || undefined,
+                            email: email || undefined,
                             provenance: "user",
                           },
                         ],
                       })
                     }
                   />
-                </p>
-                <InlineText
-                  as="p"
-                  className="text-muted"
-                  value={r.email ?? ""}
-                  editable={canEdit}
-                  emptyLabel="email"
-                  placeholder="email@example.com"
-                  onCommit={(email) =>
-                    onPatch?.({
-                      references: [
-                        { ...r, email: email || undefined, provenance: "user" },
-                      ],
-                    })
-                  }
-                />
-              </li>
+                  </div>
+              </DeletablePreviewBlock>
             ))}
           </ul>
         </section>
       ) : null}
+
+      <section className="resume-section mt-6">
+        <PreviewSectionTitle
+          title={t("hobbies")}
+          keepWithNext
+          canEdit={canEdit && (data.hobbies ?? []).length > 0}
+          onDeleteSection={() =>
+            onPatch?.({ hobbies: deleteItemsMarkers(data.hobbies ?? []) })
+          }
+          className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
+        />
+        <ul className="mt-2 space-y-2 text-sm">
+          {(data.hobbies ?? []).map((h) => (
+            <li
+              key={h.id}
+              data-resume-block
+              className="group/del relative flex flex-wrap items-baseline gap-x-1 pr-5"
+            >
+              <InlineText
+                className="font-medium"
+                value={h.name}
+                editable={canEdit}
+                placeholder="Hobby"
+                onCommit={(name) =>
+                  onPatch?.({
+                    hobbies: [{ ...h, name, provenance: "user" }],
+                  })
+                }
+              />
+              {h.description || canEdit ? (
+                <>
+                  <span className="text-muted"> — </span>
+                  <InlineText
+                    className="text-muted"
+                    value={h.description ?? ""}
+                    editable={canEdit}
+                    emptyLabel="add a short description"
+                    placeholder="Description"
+                    onCommit={(description) =>
+                      onPatch?.({
+                        hobbies: [
+                          {
+                            ...h,
+                            description: description || undefined,
+                            provenance: "user",
+                          },
+                        ],
+                      })
+                    }
+                  />
+                </>
+              ) : null}
+              {canEdit ? (
+                <PreviewDeleteButton
+                  label="Remove hobby"
+                  className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
+                  onDelete={() =>
+                    onPatch?.({ hobbies: [deleteItemMarker(h.id)] })
+                  }
+                />
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {canEdit ? (
+          <p data-resume-block className="mt-2 print:hidden">
+            <InlineText
+              value=""
+              editable
+              emptyLabel="+ Add hobby"
+              placeholder="e.g. Photography"
+              onCommit={async (name) => {
+                if (!name.trim()) return;
+                await onPatch?.({
+                  hobbies: [
+                    {
+                      id: `hobby_${Date.now()}`,
+                      name: name.trim(),
+                      provenance: "user",
+                    },
+                  ],
+                });
+              }}
+            />
+          </p>
+        ) : !(data.hobbies ?? []).length ? (
+          <p data-resume-block className="mt-2 text-sm">
+            —
+          </p>
+        ) : null}
+      </section>
     </article>
   );
 }

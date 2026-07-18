@@ -1,9 +1,19 @@
 "use client";
 
 import { skillProficiencyLabel } from "@/lib/resume/skill-proficiency";
+import { sectionLabel } from "@/lib/resume/section-labels";
+import {
+  deleteItemMarker,
+  deleteItemsMarkers,
+} from "@/lib/resume/schema";
 import { EntryLogoSlot } from "@/components/profile/entry-logo-slot";
 import { ProfilePhotoSlot } from "@/components/profile/profile-photo-slot";
 import { InlineText } from "@/components/preview/inline-text";
+import {
+  DeletablePreviewBlock,
+  PreviewDeleteButton,
+  PreviewSectionTitle,
+} from "@/components/preview/preview-delete";
 import { ProjectSection } from "@/templates/shared/project-section";
 import type { ResumePreviewProps } from "@/templates/shared/preview-props";
 
@@ -17,6 +27,8 @@ export function ModernPreview({
   onPatch,
 }: ResumePreviewProps) {
   const canEdit = Boolean(textEditable && onPatch);
+  const t = (section: Parameters<typeof sectionLabel>[0]) =>
+    sectionLabel(section, locale);
 
   return (
     <article className="w-full overflow-hidden bg-white text-foreground">
@@ -95,16 +107,22 @@ export function ModernPreview({
       <div className="grid gap-8 px-8 py-8 md:grid-cols-[1fr_2fr]">
         <aside className="space-y-6">
           <section className="resume-section">
-            <h2
-              data-resume-block
-              data-resume-keep-with-next
+            <PreviewSectionTitle
+              title={t("skills")}
+              keepWithNext
+              canEdit={canEdit && data.skills.length > 0}
+              onDeleteSection={() =>
+                onPatch?.({ skills: deleteItemsMarkers(data.skills) })
+              }
               className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-            >
-              Skills
-            </h2>
+            />
             <ul className="mt-2 space-y-2 text-sm">
               {data.skills.map((s) => (
-                <li key={s.id} data-resume-block>
+                <li
+                  key={s.id}
+                  data-resume-block
+                  className="group/del relative pr-5"
+                >
                   <InlineText
                     className="font-medium"
                     value={s.name}
@@ -121,22 +139,43 @@ export function ModernPreview({
                       {skillProficiencyLabel(s.proficiency, locale)}
                     </span>
                   ) : null}
+                  {canEdit ? (
+                    <PreviewDeleteButton
+                      label="Remove skill"
+                      className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
+                      onDelete={() =>
+                        onPatch?.({ skills: [deleteItemMarker(s.id)] })
+                      }
+                    />
+                  ) : null}
                 </li>
               ))}
             </ul>
           </section>
           {data.education.length ? (
             <section className="resume-section">
-              <h2
-                data-resume-block
-                data-resume-keep-with-next
+              <PreviewSectionTitle
+                title={t("education")}
+                keepWithNext
+                canEdit={canEdit}
+                onDeleteSection={() =>
+                  onPatch?.({ education: deleteItemsMarkers(data.education) })
+                }
                 className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-              >
-                Education
-              </h2>
+              />
               <ul className="mt-2 space-y-3 text-sm">
                 {data.education.map((ed) => (
-                  <li key={ed.id} data-resume-block className="flex gap-2">
+                  <DeletablePreviewBlock
+                    key={ed.id}
+                    as="li"
+                    canEdit={canEdit}
+                    label="Remove education"
+                    onDelete={() =>
+                      onPatch?.({ education: [deleteItemMarker(ed.id)] })
+                    }
+                    className="flex gap-2 pr-5"
+                  >
+                    <div data-resume-block className="flex w-full gap-2">
                     <EntryLogoSlot
                       profileId={profileId}
                       section="education"
@@ -235,23 +274,38 @@ export function ModernPreview({
                         />
                       </p>
                     </div>
-                  </li>
+                    </div>
+                  </DeletablePreviewBlock>
                 ))}
               </ul>
             </section>
           ) : null}
           {(data.certifications ?? []).length ? (
             <section className="resume-section">
-              <h2
-                data-resume-block
-                data-resume-keep-with-next
+              <PreviewSectionTitle
+                title={t("certifications")}
+                keepWithNext
+                canEdit={canEdit}
+                onDeleteSection={() =>
+                  onPatch?.({
+                    certifications: deleteItemsMarkers(data.certifications ?? []),
+                  })
+                }
                 className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-              >
-                Certifications
-              </h2>
+              />
               <ul className="mt-2 space-y-2 text-sm">
                 {(data.certifications ?? []).map((c) => (
-                  <li key={c.id} data-resume-block className="flex gap-2">
+                  <DeletablePreviewBlock
+                    key={c.id}
+                    as="li"
+                    canEdit={canEdit}
+                    label="Remove certification"
+                    onDelete={() =>
+                      onPatch?.({ certifications: [deleteItemMarker(c.id)] })
+                    }
+                    className="flex gap-2 pr-5"
+                  >
+                    <div data-resume-block className="flex w-full gap-2">
                     <EntryLogoSlot
                       profileId={profileId}
                       section="certifications"
@@ -313,23 +367,38 @@ export function ModernPreview({
                         />
                       </p>
                     </div>
-                  </li>
+                    </div>
+                  </DeletablePreviewBlock>
                 ))}
               </ul>
             </section>
           ) : null}
           {(data.references ?? []).length ? (
             <section className="resume-section">
-              <h2
-                data-resume-block
-                data-resume-keep-with-next
+              <PreviewSectionTitle
+                title={t("references")}
+                keepWithNext
+                canEdit={canEdit}
+                onDeleteSection={() =>
+                  onPatch?.({
+                    references: deleteItemsMarkers(data.references ?? []),
+                  })
+                }
                 className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-              >
-                References
-              </h2>
+              />
               <ul className="mt-2 space-y-3 text-sm">
                 {(data.references ?? []).map((r) => (
-                  <li key={r.id} data-resume-block>
+                  <DeletablePreviewBlock
+                    key={r.id}
+                    as="li"
+                    canEdit={canEdit}
+                    label="Remove reference"
+                    onDelete={() =>
+                      onPatch?.({ references: [deleteItemMarker(r.id)] })
+                    }
+                    className="pr-5"
+                  >
+                    <div data-resume-block>
                     <InlineText
                       as="p"
                       className="font-medium"
@@ -398,18 +467,110 @@ export function ModernPreview({
                         })
                       }
                     />
-                  </li>
+                    </div>
+                  </DeletablePreviewBlock>
                 ))}
               </ul>
             </section>
           ) : null}
+          <section className="resume-section">
+            <PreviewSectionTitle
+              title={t("hobbies")}
+              keepWithNext
+              canEdit={canEdit && (data.hobbies ?? []).length > 0}
+              onDeleteSection={() =>
+                onPatch?.({ hobbies: deleteItemsMarkers(data.hobbies ?? []) })
+              }
+              className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
+            />
+            <ul className="mt-2 space-y-2 text-sm">
+              {(data.hobbies ?? []).map((h) => (
+                <li
+                  key={h.id}
+                  data-resume-block
+                  className="group/del relative pr-5"
+                >
+                  <InlineText
+                    className="font-medium"
+                    value={h.name}
+                    editable={canEdit}
+                    placeholder="Hobby"
+                    onCommit={(name) =>
+                      onPatch?.({
+                        hobbies: [{ ...h, name, provenance: "user" }],
+                      })
+                    }
+                  />
+                  {h.description || canEdit ? (
+                    <InlineText
+                      as="p"
+                      className="text-xs text-muted"
+                      value={h.description ?? ""}
+                      editable={canEdit}
+                      emptyLabel="add a short description"
+                      placeholder="Description"
+                      onCommit={(description) =>
+                        onPatch?.({
+                          hobbies: [
+                            {
+                              ...h,
+                              description: description || undefined,
+                              provenance: "user",
+                            },
+                          ],
+                        })
+                      }
+                    />
+                  ) : null}
+                  {canEdit ? (
+                    <PreviewDeleteButton
+                      label="Remove hobby"
+                      className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
+                      onDelete={() =>
+                        onPatch?.({ hobbies: [deleteItemMarker(h.id)] })
+                      }
+                    />
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            {canEdit ? (
+              <p data-resume-block className="mt-2 print:hidden">
+                <InlineText
+                  value=""
+                  editable
+                  emptyLabel="+ Add hobby"
+                  placeholder="e.g. Photography"
+                  onCommit={async (name) => {
+                    if (!name.trim()) return;
+                    await onPatch?.({
+                      hobbies: [
+                        {
+                          id: `hobby_${Date.now()}`,
+                          name: name.trim(),
+                          provenance: "user",
+                        },
+                      ],
+                    });
+                  }}
+                />
+              </p>
+            ) : !(data.hobbies ?? []).length ? (
+              <p data-resume-block className="mt-2 text-sm text-muted">
+                —
+              </p>
+            ) : null}
+          </section>
         </aside>
         <div className="space-y-6">
           {(data.summary || canEdit) ? (
             <section data-resume-block className="resume-section">
-              <h2 className="resume-theme-heading text-xs font-semibold uppercase tracking-wider">
-                Profile
-              </h2>
+              <PreviewSectionTitle
+                title={t("profile")}
+                canEdit={canEdit && Boolean(data.summary?.trim())}
+                onDeleteSection={() => onPatch?.({ summary: "" })}
+                className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
+              />
               <InlineText
                 as="p"
                 multiline
@@ -423,16 +584,27 @@ export function ModernPreview({
             </section>
           ) : null}
           <section className="resume-section">
-            <h2
-              data-resume-block
-              data-resume-keep-with-next
+            <PreviewSectionTitle
+              title={t("experience")}
+              keepWithNext
+              canEdit={canEdit && data.experience.length > 0}
+              onDeleteSection={() =>
+                onPatch?.({ experience: deleteItemsMarkers(data.experience) })
+              }
               className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-            >
-              Experience
-            </h2>
+            />
             <div className="mt-3 space-y-4">
               {data.experience.map((exp) => (
-                <div key={exp.id} data-resume-block className="flex gap-3">
+                <DeletablePreviewBlock
+                  key={exp.id}
+                  canEdit={canEdit}
+                  label="Remove experience"
+                  onDelete={() =>
+                    onPatch?.({ experience: [deleteItemMarker(exp.id)] })
+                  }
+                  className="flex gap-3"
+                >
+                  <div data-resume-block className="flex w-full gap-3 pr-5">
                   <EntryLogoSlot
                     profileId={profileId}
                     section="experience"
@@ -472,58 +644,101 @@ export function ModernPreview({
                     </p>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
                       {exp.bullets.map((b, i) => (
-                        <li key={`b-${i}`}>
-                          <InlineText
-                            value={b}
-                            editable={canEdit}
-                            placeholder="Bullet"
-                            onCommit={(next) => {
-                              const bullets = [...exp.bullets];
-                              if (!next.trim()) bullets.splice(i, 1);
-                              else bullets[i] = next;
-                              onPatch?.({
-                                experience: [
-                                  { ...exp, bullets, provenance: "user" },
-                                ],
-                              });
-                            }}
-                          />
+                        <li key={`b-${i}`} className="group/bullet">
+                          <span className="inline-flex max-w-full items-start gap-1">
+                            <InlineText
+                              as="span"
+                              value={b}
+                              editable={canEdit}
+                              className="inline"
+                              placeholder="Bullet"
+                              onCommit={(next) => {
+                                const bullets = [...exp.bullets];
+                                if (!next.trim()) bullets.splice(i, 1);
+                                else bullets[i] = next;
+                                onPatch?.({
+                                  experience: [
+                                    { ...exp, bullets, provenance: "user" },
+                                  ],
+                                });
+                              }}
+                            />
+                            {canEdit ? (
+                              <PreviewDeleteButton
+                                label="Remove bullet"
+                                className="mt-0.5 opacity-0 group-hover/bullet:opacity-100 focus-visible:opacity-100"
+                                onDelete={() => {
+                                  const bullets = exp.bullets.filter(
+                                    (_, idx) => idx !== i,
+                                  );
+                                  onPatch?.({
+                                    experience: [
+                                      { ...exp, bullets, provenance: "user" },
+                                    ],
+                                  });
+                                }}
+                              />
+                            ) : null}
+                          </span>
                         </li>
                       ))}
                       {exp.metrics.map((m, i) => (
-                        <li key={`m-${i}`}>
-                          <InlineText
-                            value={m}
-                            editable={canEdit}
-                            placeholder="Metric"
-                            onCommit={(next) => {
-                              const metrics = [...exp.metrics];
-                              if (!next.trim()) metrics.splice(i, 1);
-                              else metrics[i] = next;
-                              onPatch?.({
-                                experience: [
-                                  { ...exp, metrics, provenance: "user" },
-                                ],
-                              });
-                            }}
-                          />
+                        <li key={`m-${i}`} className="group/bullet">
+                          <span className="inline-flex max-w-full items-start gap-1">
+                            <InlineText
+                              as="span"
+                              value={m}
+                              editable={canEdit}
+                              className="inline"
+                              placeholder="Metric"
+                              onCommit={(next) => {
+                                const metrics = [...exp.metrics];
+                                if (!next.trim()) metrics.splice(i, 1);
+                                else metrics[i] = next;
+                                onPatch?.({
+                                  experience: [
+                                    { ...exp, metrics, provenance: "user" },
+                                  ],
+                                });
+                              }}
+                            />
+                            {canEdit ? (
+                              <PreviewDeleteButton
+                                label="Remove metric"
+                                className="mt-0.5 opacity-0 group-hover/bullet:opacity-100 focus-visible:opacity-100"
+                                onDelete={() => {
+                                  const metrics = exp.metrics.filter(
+                                    (_, idx) => idx !== i,
+                                  );
+                                  onPatch?.({
+                                    experience: [
+                                      { ...exp, metrics, provenance: "user" },
+                                    ],
+                                  });
+                                }}
+                              />
+                            ) : null}
+                          </span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                </div>
+                  </div>
+                </DeletablePreviewBlock>
               ))}
             </div>
           </section>
           {data.projects.length ? (
             <section className="resume-section">
-              <h2
-                data-resume-block
-                data-resume-keep-with-next
+              <PreviewSectionTitle
+                title={t("projects")}
+                keepWithNext
+                canEdit={canEdit}
+                onDeleteSection={() =>
+                  onPatch?.({ projects: deleteItemsMarkers(data.projects) })
+                }
                 className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
-              >
-                Projects
-              </h2>
+              />
               <div data-resume-block>
                 <ProjectSection
                   projects={data.projects}

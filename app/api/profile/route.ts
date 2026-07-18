@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   badRequest,
@@ -13,6 +13,7 @@ import {
   masterResumeSchema,
   resumePatchSchema,
   type MasterResume,
+  type ResumePatch,
 } from "@/lib/resume/schema";
 import {
   createProfile,
@@ -22,6 +23,10 @@ import {
   profileToResponse,
   saveMasterResume,
 } from "@/lib/etl/persist";
+import {
+  scheduleLocaleSync,
+  syncAllLocalePresentations,
+} from "@/lib/resume/locale-presentations";
 
 /** List all resumes for the current user. */
 export async function GET() {
@@ -84,6 +89,7 @@ export async function PATCH(req: Request) {
   const profile = await getOwnedProfile(session.user.id, body.profileId);
   if (!profile) return notFound("Resume not found");
 
+  const previousData = masterResumeSchema.parse(profile.data);
   let next: MasterResume;
 
   if (body.mode === "replace") {
@@ -121,13 +127,17 @@ export async function PATCH(req: Request) {
       return badRequest("Invalid patch", parsed.error.flatten());
     }
 
-    const current = masterResumeSchema.parse(profile.data);
-    const patch = parsed.data as Partial<MasterResume>;
+    const patch = parsed.data as ResumePatch;
 
     if (isDirect) {
-      const stampUser = <T extends { provenance?: string }>(
+      const stampUser = <
+        T extends { id?: string; provenance?: string; _delete?: boolean },
+      >(
         items: T[] | undefined,
-      ) => items?.map((item) => ({ ...item, provenance: "user" as const }));
+      ) =>
+        items?.map((item) =>
+          item._delete ? item : { ...item, provenance: "user" as const },
+        );
       if (patch.experience) patch.experience = stampUser(patch.experience);
       if (patch.education) patch.education = stampUser(patch.education);
       if (patch.skills) patch.skills = stampUser(patch.skills);
@@ -135,10 +145,16 @@ export async function PATCH(req: Request) {
       if (patch.certifications)
         patch.certifications = stampUser(patch.certifications);
       if (patch.references) patch.references = stampUser(patch.references);
+      if (patch.hobbies) patch.hobbies = stampUser(patch.hobbies);
     }
 
-    next = applyConfirmedPatch(current, patch);
+    next = applyConfirmedPatch(previousData, patch);
   }
+
+  const isAiApply =
+    body.mode !== "direct" &&
+    body.mode !== "replace" &&
+    Boolean(body.confirmAiSuggestions);
 
   try {
     const updated = await saveMasterResume({
@@ -146,7 +162,35 @@ export async function PATCH(req: Request) {
       data: next,
       expectedVersion: body.version,
     });
-    return NextResponse.json({ profile: profileToResponse(updated) });
+
+    let translations:
+      | Array<{ locale: string; ok: boolean; error?: string }>
+      | undefined;
+
+    const sourceData = masterResumeSchema.parse(updated.data);
+    const syncParams = {
+      profileId: updated.id,
+      sourceLocale: updated.sourceLocale,
+      sourceVersion: updated.version,
+      sourceData,
+      previousData,
+    };
+
+    if (isAiApply) {
+      // Wait so Confirm & apply returns with JA/FR already refreshed.
+      translations = await syncAllLocalePresentations(syncParams);
+    } else {
+      // Preview / structured edits: translate in the background so save stays snappy.
+      // Rapid inline commits coalesce to the latest version.
+      after(() => {
+        void scheduleLocaleSync(syncParams);
+      });
+    }
+
+    return NextResponse.json({
+      profile: profileToResponse(updated),
+      ...(translations ? { translations } : {}),
+    });
   } catch (e) {
     if (e instanceof Error && e.message === "VERSION_CONFLICT") {
       return conflict("Profile version conflict; reload and retry");

@@ -69,7 +69,7 @@ export function PatchConfirm({
       {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
       <div className="mt-3 flex gap-2">
         <Button size="sm" onClick={apply} disabled={busy}>
-          {busy ? "Saving…" : "Confirm & apply"}
+          {busy ? "Saving & translating…" : "Confirm & apply"}
         </Button>
         <Button
           size="sm"

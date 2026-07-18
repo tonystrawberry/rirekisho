@@ -155,6 +155,7 @@ model LocalePresentation {
 
 enum ExportFormat {
   pdf
+  docx
 }
 
 model ExportArtifact {

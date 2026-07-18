@@ -124,6 +124,13 @@ export function computeCompleteness(data: MasterResume): CompletenessResult {
       });
     }
   }
+  if ((data.hobbies ?? []).length === 0) {
+    gaps.push({
+      section: "hobbies",
+      severity: "low",
+      message: "Add hobbies or interests — or skip if you prefer not to list any",
+    });
+  }
 
   const weights: Record<ResumeGap["severity"], number> = {
     critical: 25,

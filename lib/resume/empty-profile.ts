@@ -11,6 +11,7 @@ export function createEmptyMasterResume(fullName = "Your Name"): MasterResume {
     projects: [],
     certifications: [],
     references: [],
+    hobbies: [],
     meta: {
       schemaVersion: 1,
       gaps: [],

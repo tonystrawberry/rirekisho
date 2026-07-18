@@ -7,6 +7,8 @@ import { IncompleteWarning } from "@/components/export/incomplete-warning";
 import { RESUME_LOCALES } from "@/lib/resume/locales";
 import type { MasterResume } from "@/lib/resume/schema";
 
+type PendingExport = "pdf" | "docx" | null;
+
 export function ExportControls({
   profileId,
   locale,
@@ -20,13 +22,14 @@ export function ExportControls({
 }) {
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
-  const [warningOpen, setWarningOpen] = useState(false);
+  const [docxBusy, setDocxBusy] = useState(false);
+  const [pendingExport, setPendingExport] = useState<PendingExport>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   async function translate(next: string) {
-    if (busy || shareBusy) return;
+    if (busy || shareBusy || docxBusy) return;
     if (next === locale) return;
     setBusy(true);
     setError(null);
@@ -51,7 +54,7 @@ export function ExportControls({
   }
 
   async function share() {
-    if (busy || shareBusy) return;
+    if (busy || shareBusy || docxBusy) return;
     setShareBusy(true);
     setError(null);
     setCopied(false);
@@ -84,12 +87,57 @@ export function ExportControls({
   function exportPdf(acknowledgeIncomplete: boolean) {
     setError(null);
     if (hasCriticalGaps && !acknowledgeIncomplete) {
-      setWarningOpen(true);
+      setPendingExport("pdf");
       return;
     }
-    setWarningOpen(false);
+    setPendingExport(null);
     window.print();
   }
+
+  async function exportDocx(acknowledgeIncomplete: boolean) {
+    if (busy || shareBusy || docxBusy) return;
+    setError(null);
+    if (hasCriticalGaps && !acknowledgeIncomplete) {
+      setPendingExport("docx");
+      return;
+    }
+    setPendingExport(null);
+    setDocxBusy(true);
+    try {
+      const res = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profileId,
+          locale,
+          acknowledgeIncomplete: acknowledgeIncomplete || !hasCriticalGaps,
+        }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error?.message || "Word export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] || `resume-${locale}.docx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Word export failed");
+    } finally {
+      setDocxBusy(false);
+    }
+  }
+
+  const anyBusy = busy || shareBusy || docxBusy;
 
   return (
     <div className="space-y-3">
@@ -99,7 +147,7 @@ export function ExportControls({
             key={l.id}
             size="sm"
             variant={locale === l.id ? "default" : "outline"}
-            disabled={busy || shareBusy}
+            disabled={anyBusy}
             onClick={() => void translate(l.id)}
           >
             {l.label}
@@ -108,7 +156,7 @@ export function ExportControls({
         <Button
           size="sm"
           variant="secondary"
-          disabled={busy || shareBusy}
+          disabled={anyBusy}
           onClick={() => exportPdf(false)}
         >
           Export PDF
@@ -116,7 +164,15 @@ export function ExportControls({
         <Button
           size="sm"
           variant="outline"
-          disabled={busy || shareBusy}
+          disabled={anyBusy}
+          onClick={() => void exportDocx(false)}
+        >
+          {docxBusy ? "Exporting…" : "Export Word"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={anyBusy}
           onClick={() => void share()}
         >
           {shareBusy ? "Sharing…" : "Share"}
@@ -143,17 +199,20 @@ export function ExportControls({
         <p className="text-xs text-muted">Translating… this can take a few seconds.</p>
       ) : !shareUrl ? (
         <p className="text-xs text-muted">
-          Opens the print dialog — choose “Save as PDF”. Set margins to
-          <span className="font-medium text-foreground"> None</span> and turn off
-          headers/footers so the PDF matches the preview scale. Share creates a
-          public link for the selected language.
+          PDF opens print → Save as PDF (margins{" "}
+          <span className="font-medium text-foreground">None</span>). Word
+          downloads a classical Times New Roman .docx. Share creates a public
+          link for the selected language.
         </p>
       ) : null}
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       <IncompleteWarning
-        open={warningOpen}
-        onCancel={() => setWarningOpen(false)}
-        onConfirm={() => exportPdf(true)}
+        open={pendingExport != null}
+        onCancel={() => setPendingExport(null)}
+        onConfirm={() => {
+          if (pendingExport === "docx") void exportDocx(true);
+          else exportPdf(true);
+        }}
       />
     </div>
   );

@@ -142,7 +142,7 @@ export function WorkspaceClient({
     await loadResumeData(next, sourceData);
   }
 
-  async function saveDirectPatch(patch: Partial<MasterResume>) {
+  async function saveDirectPatch(patch: import("@/lib/resume/schema").ResumePatch) {
     setEditError(null);
     const expectedVersion = version;
     // Optimistic UI so the preview updates immediately.
