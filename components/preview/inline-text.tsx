@@ -26,6 +26,7 @@ type InlineTextProps = {
 /**
  * Click-to-edit text for the resume preview.
  * Enter commits (Ctrl/Cmd+Enter for multiline); Escape cancels; blur commits.
+ * Long or multi-line values open a textarea so the full text stays visible.
  */
 export function InlineText({
   value,
@@ -45,6 +46,10 @@ export function InlineText({
   const committingRef = useRef(false);
   const skipBlurRef = useRef(false);
 
+  // Prefer a textarea for wrapped/long bullets even when callers omit `multiline`.
+  const useMultiline =
+    multiline || value.includes("\n") || value.trim().length > 48;
+
   useEffect(() => {
     if (!editing) setDraft(value);
   }, [value, editing]);
@@ -62,7 +67,7 @@ export function InlineText({
     if (!value) return null;
     return (
       <Tag
-        className={cn(className, multiline && "whitespace-pre-wrap")}
+        className={cn(className, useMultiline && "whitespace-pre-wrap")}
       >
         {value}
       </Tag>
@@ -104,7 +109,7 @@ export function InlineText({
       cancel();
       return;
     }
-    if (e.key === "Enter" && (!multiline || e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && (!useMultiline || e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       // Enter blurs the input; ignore that blur so we don't double-save
       // (second save hits a version conflict and can revert the UI).
@@ -127,18 +132,24 @@ export function InlineText({
       busy && "opacity-60",
       inputClassName ?? className,
     );
-    if (multiline) {
+    if (useMultiline) {
+      const newlineCount = draft.split("\n").length;
+      const wrapEstimate = Math.ceil(Math.max(draft.length, 1) / 56);
+      const rows = Math.min(14, Math.max(3, newlineCount, wrapEstimate));
       return (
         <textarea
           ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-          className={cn(shared, "min-h-[4.5rem] resize-y px-1 py-0.5")}
+          className={cn(
+            shared,
+            "min-h-[4.5rem] resize-y px-1 py-0.5 leading-relaxed whitespace-pre-wrap",
+          )}
           value={draft}
           disabled={busy}
           placeholder={placeholder}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={onBlur}
           onKeyDown={onKeyDown}
-          rows={Math.min(12, Math.max(3, draft.split("\n").length + 1))}
+          rows={rows}
         />
       );
     }
@@ -164,13 +175,17 @@ export function InlineText({
     <Tag
       className={cn(
         className,
-        multiline && !isEmpty && "whitespace-pre-wrap",
+        useMultiline && !isEmpty && "whitespace-pre-wrap",
         "cursor-text rounded-sm decoration-transparent transition-[box-shadow,background-color] hover:bg-accent/5 hover:ring-1 hover:ring-accent/25 print:bg-transparent print:ring-0",
         isEmpty && "text-muted italic print:hidden",
       )}
       role="button"
       tabIndex={0}
-      title="Click to edit"
+      title={
+        useMultiline
+          ? "Click to edit (Ctrl/⌘+Enter to save)"
+          : "Click to edit"
+      }
       onClick={(e) => {
         e.stopPropagation();
         setEditing(true);

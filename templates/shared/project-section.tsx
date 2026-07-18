@@ -74,10 +74,12 @@ export function ProjectSection({
               <ul className="mt-1 list-disc space-y-0.5 pl-5">
                 {p.highlights.map((h, i) => (
                   <li key={i} className="group/bullet">
-                    <span className="inline-flex max-w-full items-start gap-1">
+                    <span className="flex w-full items-start gap-1">
                       <InlineText
+                        multiline
                         value={h}
                         editable={textEditable}
+                        className="min-w-0 flex-1"
                         placeholder="Highlight"
                         onCommit={(next) => {
                           const highlights = [...p.highlights];

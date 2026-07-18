@@ -1,6 +1,5 @@
 "use client";
 
-import { skillProficiencyLabel } from "@/lib/resume/skill-proficiency";
 import { sectionLabel } from "@/lib/resume/section-labels";
 import {
   deleteItemMarker,
@@ -15,7 +14,9 @@ import {
   PreviewSectionTitle,
 } from "@/components/preview/preview-delete";
 import { ProjectSection } from "@/templates/shared/project-section";
+import { SkillsSection } from "@/templates/shared/skills-section";
 import type { ResumePreviewProps } from "@/templates/shared/preview-props";
+import { IdentityLinksRow } from "@/components/preview/identity-links";
 
 export function ModernPreview({
   data,
@@ -101,6 +102,20 @@ export function ModernPreview({
                 })
               }
             />
+            <IdentityLinksRow
+              links={data.identity.links}
+              canEdit={canEdit}
+              inputClassName="text-sm text-foreground"
+              separatorClassName="opacity-50"
+              onChange={(links) =>
+                onPatch?.({
+                  identity: {
+                    ...data.identity,
+                    links: links.length ? links : undefined,
+                  },
+                })
+              }
+            />
           </div>
         </div>
       </header>
@@ -116,41 +131,13 @@ export function ModernPreview({
               }
               className="resume-theme-heading text-xs font-semibold uppercase tracking-wider"
             />
-            <ul className="mt-2 space-y-2 text-sm">
-              {data.skills.map((s) => (
-                <li
-                  key={s.id}
-                  data-resume-block
-                  className="group/del relative pr-5"
-                >
-                  <InlineText
-                    className="font-medium"
-                    value={s.name}
-                    editable={canEdit}
-                    placeholder="Skill"
-                    onCommit={(name) =>
-                      onPatch?.({
-                        skills: [{ ...s, name, provenance: "user" }],
-                      })
-                    }
-                  />
-                  {s.proficiency ? (
-                    <span className="mt-0.5 block text-xs text-muted">
-                      {skillProficiencyLabel(s.proficiency, locale)}
-                    </span>
-                  ) : null}
-                  {canEdit ? (
-                    <PreviewDeleteButton
-                      label="Remove skill"
-                      className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
-                      onDelete={() =>
-                        onPatch?.({ skills: [deleteItemMarker(s.id)] })
-                      }
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <SkillsSection
+              skills={data.skills}
+              locale={locale}
+              canEdit={canEdit}
+              onPatch={onPatch}
+              compact
+            />
           </section>
           {data.education.length ? (
             <section className="resume-section">
@@ -184,10 +171,10 @@ export function ModernPreview({
                       editable={editable}
                       onChanged={() => onMediaChanged?.()}
                     />
-                    <div>
+                    <div className="min-w-0">
                       <InlineText
                         as="p"
-                        className="font-medium"
+                        className="m-0 font-medium leading-snug"
                         value={ed.institution}
                         editable={canEdit}
                         placeholder="School"
@@ -199,7 +186,7 @@ export function ModernPreview({
                           })
                         }
                       />
-                      <p className="text-muted">
+                      <p className="m-0 leading-snug text-muted">
                         <InlineText
                           value={ed.degree ?? ""}
                           editable={canEdit}
@@ -236,43 +223,66 @@ export function ModernPreview({
                           }
                         />
                       </p>
-                      <p className="text-xs text-muted">
-                        <InlineText
-                          value={ed.startDate ?? ""}
-                          editable={canEdit}
-                          emptyLabel="start"
-                          placeholder="YYYY"
-                          onCommit={(startDate) =>
-                            onPatch?.({
-                              education: [
-                                {
-                                  ...ed,
-                                  startDate: startDate || undefined,
-                                  provenance: "user",
-                                },
-                              ],
-                            })
-                          }
-                        />
-                        <span> – </span>
-                        <InlineText
-                          value={ed.endDate ?? ""}
-                          editable={canEdit}
-                          emptyLabel="end"
-                          placeholder="YYYY"
-                          onCommit={(endDate) =>
-                            onPatch?.({
-                              education: [
-                                {
-                                  ...ed,
-                                  endDate: endDate || undefined,
-                                  provenance: "user",
-                                },
-                              ],
-                            })
-                          }
-                        />
-                      </p>
+                      <div className="text-xs leading-snug text-muted">
+                        {(ed.location || canEdit) ? (
+                          <p className="m-0">
+                            <InlineText
+                              value={ed.location ?? ""}
+                              editable={canEdit}
+                              emptyLabel="location"
+                              placeholder="City, Country"
+                              onCommit={(location) =>
+                                onPatch?.({
+                                  education: [
+                                    {
+                                      ...ed,
+                                      location: location || undefined,
+                                      provenance: "user",
+                                    },
+                                  ],
+                                })
+                              }
+                            />
+                          </p>
+                        ) : null}
+                        <p className="m-0">
+                          <InlineText
+                            value={ed.startDate ?? ""}
+                            editable={canEdit}
+                            emptyLabel="start"
+                            placeholder="YYYY"
+                            onCommit={(startDate) =>
+                              onPatch?.({
+                                education: [
+                                  {
+                                    ...ed,
+                                    startDate: startDate || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                          <span> – </span>
+                          <InlineText
+                            value={ed.endDate ?? ""}
+                            editable={canEdit}
+                            emptyLabel="end"
+                            placeholder="YYYY"
+                            onCommit={(endDate) =>
+                              onPatch?.({
+                                education: [
+                                  {
+                                    ...ed,
+                                    endDate: endDate || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                        </p>
+                      </div>
                     </div>
                     </div>
                   </DeletablePreviewBlock>
@@ -642,15 +652,82 @@ export function ModernPreview({
                         }
                       />
                     </p>
+                    <div className="text-xs text-muted">
+                      {(exp.location || canEdit) ? (
+                        <p>
+                          <InlineText
+                            value={exp.location ?? ""}
+                            editable={canEdit}
+                            emptyLabel="location"
+                            placeholder="City, Country"
+                            onCommit={(location) =>
+                              onPatch?.({
+                                experience: [
+                                  {
+                                    ...exp,
+                                    location: location || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                        </p>
+                      ) : null}
+                      <p>
+                        <InlineText
+                          value={exp.startDate ?? ""}
+                          editable={canEdit}
+                          emptyLabel="start"
+                          placeholder="YYYY-MM"
+                          onCommit={(startDate) =>
+                            onPatch?.({
+                              experience: [
+                                {
+                                  ...exp,
+                                  startDate: startDate || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                        <span> – </span>
+                        <InlineText
+                          value={
+                            exp.current ? "Present" : (exp.endDate ?? "")
+                          }
+                          editable={canEdit}
+                          emptyLabel="end"
+                          placeholder="YYYY-MM or Present"
+                          onCommit={(end) => {
+                            const current = /^present$/i.test(end.trim());
+                            onPatch?.({
+                              experience: [
+                                {
+                                  ...exp,
+                                  current,
+                                  endDate: current
+                                    ? undefined
+                                    : end || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            });
+                          }}
+                        />
+                      </p>
+                    </div>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
                       {exp.bullets.map((b, i) => (
                         <li key={`b-${i}`} className="group/bullet">
-                          <span className="inline-flex max-w-full items-start gap-1">
+                          <span className="flex w-full items-start gap-1">
                             <InlineText
                               as="span"
+                              multiline
                               value={b}
                               editable={canEdit}
-                              className="inline"
+                              className="min-w-0 flex-1"
                               placeholder="Bullet"
                               onCommit={(next) => {
                                 const bullets = [...exp.bullets];
@@ -684,12 +761,13 @@ export function ModernPreview({
                       ))}
                       {exp.metrics.map((m, i) => (
                         <li key={`m-${i}`} className="group/bullet">
-                          <span className="inline-flex max-w-full items-start gap-1">
+                          <span className="flex w-full items-start gap-1">
                             <InlineText
                               as="span"
+                              multiline
                               value={m}
                               editable={canEdit}
-                              className="inline"
+                              className="min-w-0 flex-1"
                               placeholder="Metric"
                               onCommit={(next) => {
                                 const metrics = [...exp.metrics];

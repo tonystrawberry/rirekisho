@@ -38,6 +38,7 @@ export const educationItemSchema = z.object({
   institution: z.string(),
   degree: z.string().optional(),
   field: z.string().optional(),
+  location: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   bullets: z.array(z.string()).optional(),

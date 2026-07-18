@@ -1,8 +1,9 @@
 import React from "react";
 import { Document, Page, StyleSheet, Text, View, Image } from "@react-pdf/renderer";
 import type { MasterResume } from "@/lib/resume/schema";
-import { formatSkillWithProficiency } from "@/lib/resume/skill-proficiency";
+import { groupSkillNamesByCategory } from "@/lib/resume/skill-categories";
 import { sectionLabel } from "@/lib/resume/section-labels";
+import { formatIdentityLinksForMeta } from "@/lib/resume/identity-links";
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1a2332" },
@@ -48,7 +49,12 @@ export function ClassicDocument({
               <Text style={styles.headline}>{data.identity.headline}</Text>
             ) : null}
             <Text style={styles.meta}>
-              {[data.identity.email, data.identity.phone, data.identity.location]
+              {[
+                data.identity.email,
+                data.identity.phone,
+                data.identity.location,
+                ...formatIdentityLinksForMeta(data.identity.links),
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </Text>
@@ -74,6 +80,9 @@ export function ClassicDocument({
                 <Text style={styles.itemTitle}>
                   {exp.title} — {exp.company}
                 </Text>
+                {exp.location ? (
+                  <Text style={styles.meta}>{exp.location}</Text>
+                ) : null}
                 <Text style={styles.meta}>
                   {[exp.startDate, exp.endDate || (exp.current ? "Present" : "")]
                     .filter(Boolean)
@@ -102,6 +111,9 @@ export function ClassicDocument({
                       {ed.degree ? ` — ${ed.degree}` : ""}
                       {ed.field ? `, ${ed.field}` : ""}
                     </Text>
+                    {ed.location ? (
+                      <Text style={styles.meta}>{ed.location}</Text>
+                    ) : null}
                     {[ed.startDate, ed.endDate].filter(Boolean).length ? (
                       <Text style={styles.meta}>
                         {[ed.startDate, ed.endDate].filter(Boolean).join(" – ")}
@@ -114,11 +126,14 @@ export function ClassicDocument({
           </>
         ) : null}
         <Text style={styles.section}>{sectionLabel("skills", locale)}</Text>
-        {data.skills.map((s) => (
-          <Text key={s.id} style={{ marginTop: 2 }}>
-            {formatSkillWithProficiency(s, locale)}
-          </Text>
-        ))}
+        {Array.from(groupSkillNamesByCategory(data.skills, locale)).map(
+          ([category, names]) => (
+            <Text key={category} style={{ marginTop: 3 }}>
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>{category}: </Text>
+              {names.join(" · ")}
+            </Text>
+          ),
+        )}
         {data.projects.length ? (
           <>
             <Text style={styles.section}>{sectionLabel("projects", locale)}</Text>

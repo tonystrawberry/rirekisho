@@ -15,6 +15,8 @@ import {
 } from "docx";
 import type { MasterResume } from "@/lib/resume/schema";
 import { sectionLabel } from "@/lib/resume/section-labels";
+import { formatLinkDisplay } from "@/lib/resume/identity-links";
+import { groupSkillNamesByCategory } from "@/lib/resume/skill-categories";
 
 const FONT = "Times New Roman";
 const SIZE_NAME = 48; // 24pt
@@ -241,81 +243,10 @@ function contactLine(data: MasterResume): string {
   if (identity.phone?.trim()) parts.push(identity.phone.trim());
   if (identity.location?.trim()) parts.push(identity.location.trim());
   for (const link of identity.links ?? []) {
-    const label = link.label?.trim() || link.url;
-    if (label) parts.push(label);
+    const display = formatLinkDisplay(link);
+    if (display) parts.push(display);
   }
   return parts.join("  |  ");
-}
-
-const CATEGORY_ORDER = [
-  "Languages & Frameworks",
-  "Databases & APIs",
-  "Cloud & Infrastructure",
-  "Tools & Environments",
-  "Other",
-] as const;
-
-/** Infer a classical skill category when the profile has none set. */
-function inferSkillCategory(name: string): (typeof CATEGORY_ORDER)[number] {
-  const n = name.toLowerCase();
-
-  if (
-    /\b(javascript|typescript|python|java|kotlin|swift|go\b|golang|rust|c\+\+|c#|\bc\b|ruby|php|scala|html|css|tailwind|react|next\.?js|vue|angular|svelte|node\.?js|express|rails|django|spring|flutter|react native|android|ios|\.net)\b/.test(
-      n,
-    )
-  ) {
-    return "Languages & Frameworks";
-  }
-
-  if (
-    /\b(postgres|postgresql|mysql|mariadb|mongodb|redis|dynamodb|sqlite|elasticsearch|graphql|rest(ful)?|api|nginx|gradle|prisma|sql)\b/.test(
-      n,
-    )
-  ) {
-    return "Databases & APIs";
-  }
-
-  if (
-    /\b(aws|amazon|azure|gcp|google cloud|terraform|pulumi|kubernetes|k8s|docker|ecs|eks|lambda|fargate|cloudfront|iam|s3|ec2|vpc|infrastructure|iac|devops|ci\/?cd)\b/.test(
-      n,
-    )
-  ) {
-    return "Cloud & Infrastructure";
-  }
-
-  if (
-    /\b(git|github|gitlab|linux|unix|bash|shell|docker|jenkins|circleci|github actions|vim|vscode|jira|figma|webpack|vite)\b/.test(
-      n,
-    )
-  ) {
-    return "Tools & Environments";
-  }
-
-  return "Other";
-}
-
-function groupSkills(data: MasterResume) {
-  const groups = new Map<string, string[]>();
-  for (const skill of data.skills) {
-    const name = skill.name?.trim();
-    if (!name) continue;
-    const key =
-      skill.category?.trim() || inferSkillCategory(name);
-    const list = groups.get(key) ?? [];
-    list.push(name);
-    groups.set(key, list);
-  }
-
-  // Stable classical order, then any custom categories last
-  const ordered = new Map<string, string[]>();
-  for (const cat of CATEGORY_ORDER) {
-    const names = groups.get(cat);
-    if (names?.length) ordered.set(cat, names);
-  }
-  for (const [cat, names] of groups) {
-    if (!ordered.has(cat)) ordered.set(cat, names);
-  }
-  return ordered;
 }
 
 function headerBlock(data: MasterResume): DocChild[] {
@@ -380,9 +311,20 @@ export async function renderClassicalDocx(
       children.push(
         dualLine(
           { text: degreeParts, italics: true },
-          { text: formatRange(ed.startDate, ed.endDate), italics: true },
+          { text: ed.location?.trim() ?? "", italics: true },
         ),
       );
+      if (ed.startDate || ed.endDate) {
+        children.push(
+          dualLine(
+            { text: "", italics: true },
+            {
+              text: formatRange(ed.startDate, ed.endDate),
+              italics: true,
+            },
+          ),
+        );
+      }
       for (const b of ed.bullets ?? []) {
         if (b.trim()) children.push(bullet(b.trim()));
       }
@@ -396,7 +338,7 @@ export async function renderClassicalDocx(
       children.push(
         dualLine(
           { text: exp.company, bold: true },
-          { text: exp.location?.trim() ?? "", bold: true },
+          { text: exp.location?.trim() ?? "", italics: true },
         ),
       );
       children.push(
@@ -441,9 +383,9 @@ export async function renderClassicalDocx(
 
   if (data.skills.length) {
     children.push(...sectionHeading(t("technicalSkills")));
-    const groups = groupSkills(data);
+    const groups = groupSkillNamesByCategory(data.skills, locale);
     for (const [category, names] of groups) {
-      children.push(skillBullet(category, names.join(", ")));
+      children.push(skillBullet(category, names.join(" · ")));
     }
   }
 

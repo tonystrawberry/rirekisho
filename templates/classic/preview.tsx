@@ -1,6 +1,5 @@
 "use client";
 
-import { skillProficiencyLabel } from "@/lib/resume/skill-proficiency";
 import { sectionLabel } from "@/lib/resume/section-labels";
 import {
   deleteItemMarker,
@@ -15,7 +14,9 @@ import {
   PreviewSectionTitle,
 } from "@/components/preview/preview-delete";
 import { ProjectSection } from "@/templates/shared/project-section";
+import { SkillsSection } from "@/templates/shared/skills-section";
 import type { ResumePreviewProps } from "@/templates/shared/preview-props";
+import { IdentityLinksRow } from "@/components/preview/identity-links";
 
 export function ClassicPreview({
   data,
@@ -109,6 +110,18 @@ export function ClassicPreview({
                 })
               }
             />
+            <IdentityLinksRow
+              links={data.identity.links}
+              canEdit={canEdit}
+              onChange={(links) =>
+                onPatch?.({
+                  identity: {
+                    ...data.identity,
+                    links: links.length ? links : undefined,
+                  },
+                })
+              }
+            />
           </div>
         </div>
       </header>
@@ -166,7 +179,7 @@ export function ClassicPreview({
                 className="mt-0.5"
               />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline justify-between gap-2 pr-5">
+                <div className="flex flex-wrap items-start justify-between gap-2 pr-5">
                   <p className="font-medium">
                     <InlineText
                       value={exp.title}
@@ -190,57 +203,83 @@ export function ClassicPreview({
                       }
                     />
                   </p>
-                  <p className="text-xs text-muted">
-                    <InlineText
-                      value={exp.startDate ?? ""}
-                      editable={canEdit}
-                      emptyLabel="start"
-                      placeholder="YYYY-MM"
-                      onCommit={(startDate) =>
-                        onPatch?.({
-                          experience: [
-                            {
-                              ...exp,
-                              startDate: startDate || undefined,
-                              provenance: "user",
-                            },
-                          ],
-                        })
-                      }
-                    />
-                    <span> – </span>
-                    <InlineText
-                      value={
-                        exp.current ? "Present" : (exp.endDate ?? "")
-                      }
-                      editable={canEdit}
-                      emptyLabel="end"
-                      placeholder="YYYY-MM or Present"
-                      onCommit={(end) => {
-                        const current = /^present$/i.test(end.trim());
-                        onPatch?.({
-                          experience: [
-                            {
-                              ...exp,
-                              current,
-                              endDate: current ? undefined : end || undefined,
-                              provenance: "user",
-                            },
-                          ],
-                        });
-                      }}
-                    />
-                  </p>
+                  <div className="shrink-0 text-right text-xs text-muted">
+                    {(exp.location || canEdit) ? (
+                      <p>
+                        <InlineText
+                          value={exp.location ?? ""}
+                          editable={canEdit}
+                          emptyLabel="location"
+                          placeholder="City, Country"
+                          onCommit={(location) =>
+                            onPatch?.({
+                              experience: [
+                                {
+                                  ...exp,
+                                  location: location || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                      </p>
+                    ) : null}
+                    <p>
+                      <InlineText
+                        value={exp.startDate ?? ""}
+                        editable={canEdit}
+                        emptyLabel="start"
+                        placeholder="YYYY-MM"
+                        onCommit={(startDate) =>
+                          onPatch?.({
+                            experience: [
+                              {
+                                ...exp,
+                                startDate: startDate || undefined,
+                                provenance: "user",
+                              },
+                            ],
+                          })
+                        }
+                      />
+                      <span> – </span>
+                      <InlineText
+                        value={
+                          exp.current ? "Present" : (exp.endDate ?? "")
+                        }
+                        editable={canEdit}
+                        emptyLabel="end"
+                        placeholder="YYYY-MM or Present"
+                        onCommit={(end) => {
+                          const current = /^present$/i.test(end.trim());
+                          onPatch?.({
+                            experience: [
+                              {
+                                ...exp,
+                                current,
+                                endDate: current
+                                  ? undefined
+                                  : end || undefined,
+                                provenance: "user",
+                              },
+                            ],
+                          });
+                        }}
+                      />
+                    </p>
+                  </div>
                 </div>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
                   {exp.bullets.map((b, i) => (
                     <li key={`b-${i}`} className="group/bullet">
-                      <span className="inline-flex max-w-full items-start gap-1">
+                      <span className="flex w-full items-start gap-1">
                         <InlineText
                           as="span"
+                          multiline
                           value={b}
                           editable={canEdit}
-                          className="inline"
+                          className="min-w-0 flex-1"
                           placeholder="Bullet point"
                           onCommit={(next) => {
                             const bullets = [...exp.bullets];
@@ -274,12 +313,13 @@ export function ClassicPreview({
                   ))}
                   {exp.metrics.map((m, i) => (
                     <li key={`m-${i}`} className="group/bullet">
-                      <span className="inline-flex max-w-full items-start gap-1">
+                      <span className="flex w-full items-start gap-1">
                         <InlineText
                           as="span"
+                          multiline
                           value={m}
                           editable={canEdit}
-                          className="inline"
+                          className="min-w-0 flex-1"
                           placeholder="Metric"
                           onCommit={(next) => {
                             const metrics = [...exp.metrics];
@@ -355,98 +395,123 @@ export function ClassicPreview({
                   className="mt-0.5"
                 />
                 <div className="min-w-0 flex-1 pr-5">
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <InlineText
-                      as="p"
-                      className="font-medium"
-                      value={ed.institution}
-                      editable={canEdit}
-                      placeholder="School"
-                      onCommit={(institution) =>
-                        onPatch?.({
-                          education: [
-                            { ...ed, institution, provenance: "user" },
-                          ],
-                        })
-                      }
-                    />
-                    <p className="text-xs text-muted">
+                  <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-0.5">
+                    <div className="min-w-0 flex-1">
                       <InlineText
-                        value={ed.startDate ?? ""}
+                        as="p"
+                        className="m-0 font-medium leading-snug"
+                        value={ed.institution}
                         editable={canEdit}
-                        emptyLabel="start"
-                        placeholder="YYYY"
-                        onCommit={(startDate) =>
+                        placeholder="School"
+                        onCommit={(institution) =>
                           onPatch?.({
                             education: [
-                              {
-                                ...ed,
-                                startDate: startDate || undefined,
-                                provenance: "user",
-                              },
+                              { ...ed, institution, provenance: "user" },
                             ],
                           })
                         }
                       />
-                      {(ed.startDate || ed.endDate || canEdit) ? (
-                        <span> – </span>
+                      <p className="m-0 text-sm leading-snug text-muted">
+                        <InlineText
+                          value={ed.degree ?? ""}
+                          editable={canEdit}
+                          emptyLabel="degree"
+                          placeholder="Degree"
+                          onCommit={(degree) =>
+                            onPatch?.({
+                              education: [
+                                {
+                                  ...ed,
+                                  degree: degree || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                        <span> · </span>
+                        <InlineText
+                          value={ed.field ?? ""}
+                          editable={canEdit}
+                          emptyLabel="field"
+                          placeholder="Field of study"
+                          onCommit={(field) =>
+                            onPatch?.({
+                              education: [
+                                {
+                                  ...ed,
+                                  field: field || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right text-xs leading-snug text-muted">
+                      {(ed.location || canEdit) ? (
+                        <p className="m-0">
+                          <InlineText
+                            value={ed.location ?? ""}
+                            editable={canEdit}
+                            emptyLabel="location"
+                            placeholder="City, Country"
+                            onCommit={(location) =>
+                              onPatch?.({
+                                education: [
+                                  {
+                                    ...ed,
+                                    location: location || undefined,
+                                    provenance: "user",
+                                  },
+                                ],
+                              })
+                            }
+                          />
+                        </p>
                       ) : null}
-                      <InlineText
-                        value={ed.endDate ?? ""}
-                        editable={canEdit}
-                        emptyLabel="end"
-                        placeholder="YYYY"
-                        onCommit={(endDate) =>
-                          onPatch?.({
-                            education: [
-                              {
-                                ...ed,
-                                endDate: endDate || undefined,
-                                provenance: "user",
-                              },
-                            ],
-                          })
-                        }
-                      />
-                    </p>
+                      <p className="m-0">
+                        <InlineText
+                          value={ed.startDate ?? ""}
+                          editable={canEdit}
+                          emptyLabel="start"
+                          placeholder="YYYY"
+                          onCommit={(startDate) =>
+                            onPatch?.({
+                              education: [
+                                {
+                                  ...ed,
+                                  startDate: startDate || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                        {(ed.startDate || ed.endDate || canEdit) ? (
+                          <span> – </span>
+                        ) : null}
+                        <InlineText
+                          value={ed.endDate ?? ""}
+                          editable={canEdit}
+                          emptyLabel="end"
+                          placeholder="YYYY"
+                          onCommit={(endDate) =>
+                            onPatch?.({
+                              education: [
+                                {
+                                  ...ed,
+                                  endDate: endDate || undefined,
+                                  provenance: "user",
+                                },
+                              ],
+                            })
+                          }
+                        />
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted">
-                    <InlineText
-                      value={ed.degree ?? ""}
-                      editable={canEdit}
-                      emptyLabel="degree"
-                      placeholder="Degree"
-                      onCommit={(degree) =>
-                        onPatch?.({
-                          education: [
-                            {
-                              ...ed,
-                              degree: degree || undefined,
-                              provenance: "user",
-                            },
-                          ],
-                        })
-                      }
-                    />
-                    <span> · </span>
-                    <InlineText
-                      value={ed.field ?? ""}
-                      editable={canEdit}
-                      emptyLabel="field"
-                      placeholder="Field of study"
-                      onCommit={(field) =>
-                        onPatch?.({
-                          education: [
-                            {
-                              ...ed,
-                              field: field || undefined,
-                              provenance: "user",
-                            },
-                          ],
-                        })
-                      }
-                    />
-                  </p>
                 </div>
                 </div>
               </DeletablePreviewBlock>
@@ -465,44 +530,12 @@ export function ClassicPreview({
           }
           className="resume-theme-heading text-sm font-semibold uppercase tracking-wide"
         />
-        {data.skills.length ? (
-          <ul className="mt-2 space-y-1 text-sm">
-            {data.skills.map((s) => (
-              <li key={s.id} data-resume-block className="group/del relative pr-5">
-                <InlineText
-                  className="font-medium"
-                  value={s.name}
-                  editable={canEdit}
-                  placeholder="Skill"
-                  onCommit={(name) =>
-                    onPatch?.({
-                      skills: [{ ...s, name, provenance: "user" }],
-                    })
-                  }
-                />
-                {s.proficiency ? (
-                  <span className="text-muted">
-                    {" "}
-                    — {skillProficiencyLabel(s.proficiency, locale)}
-                  </span>
-                ) : null}
-                {canEdit ? (
-                  <PreviewDeleteButton
-                    label="Remove skill"
-                    className="absolute right-0 top-0 opacity-0 group-hover/del:opacity-100 focus-visible:opacity-100"
-                    onDelete={() =>
-                      onPatch?.({ skills: [deleteItemMarker(s.id)] })
-                    }
-                  />
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p data-resume-block className="mt-2 text-sm">
-            —
-          </p>
-        )}
+        <SkillsSection
+          skills={data.skills}
+          locale={locale}
+          canEdit={canEdit}
+          onPatch={onPatch}
+        />
       </section>
 
       {data.projects.length ? (

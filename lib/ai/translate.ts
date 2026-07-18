@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { getChatModel, hasLlmKey } from "@/lib/ai/models";
 import { localeLanguageName } from "@/lib/resume/locales";
+import { localizeSkillCategories } from "@/lib/resume/skill-categories";
 import type { MasterResume } from "@/lib/resume/schema";
 
 /** Text-only slice sent to the LLM (no photo/logo URLs, emails, links, meta). */
@@ -29,6 +30,7 @@ const translateTextSchema = z.object({
       institution: z.string(),
       degree: z.string().optional(),
       field: z.string().optional(),
+      location: z.string().optional(),
       bullets: z.array(z.string()).optional(),
     }),
   ),
@@ -126,6 +128,7 @@ export function toTranslateTextPayload(data: MasterResume): TranslateTextPayload
       institution: e.institution,
       ...(e.degree ? { degree: e.degree } : {}),
       ...(e.field ? { field: e.field } : {}),
+      ...(e.location ? { location: e.location } : {}),
       ...(e.bullets?.length ? { bullets: e.bullets } : {}),
     })),
     skills: data.skills.map((s) => ({
@@ -307,6 +310,7 @@ export function alignLocaleToSource(
         institution: l.institution,
         degree: l.degree ?? e.degree,
         field: l.field ?? e.field,
+        location: l.location ?? e.location,
         bullets: l.bullets ?? e.bullets,
       };
     }),
@@ -441,6 +445,7 @@ export function applyTranslatedDelta(
           institution: tr.institution,
           degree: tr.degree ?? e.degree,
           field: tr.field ?? e.field,
+          location: tr.location ?? e.location,
           bullets: tr.bullets ?? e.bullets,
         };
       }),
@@ -621,6 +626,7 @@ function demoTranslateDelta(
             institution: wrap(e.institution),
             ...(e.degree ? { degree: wrap(e.degree) } : {}),
             ...(e.field ? { field: wrap(e.field) } : {}),
+            ...(e.location ? { location: wrap(e.location) } : {}),
             ...(e.bullets ? { bullets: e.bullets.map(wrap) } : {}),
           })),
         }
@@ -630,7 +636,8 @@ function demoTranslateDelta(
           skills: delta.skills.map((s) => ({
             ...s,
             name: wrap(s.name),
-            ...(s.category ? { category: wrap(s.category) } : {}),
+            // Keep English category keys; UI localizes labels.
+            ...(s.category ? { category: s.category } : {}),
           })),
         }
       : {}),
@@ -694,6 +701,7 @@ export async function translateTextDelta(
 Rules:
 - Return ONLY a JSON object with the same shape and the same "id" values.
 - Translate user-facing text only. Keep empty strings empty.
+- Keep skill "category" values in English exactly as given. Do not translate category names.
 - Do not invent new fields, items, or content.
 - Do not add URLs, emails, dates, or image paths.
 
@@ -717,10 +725,25 @@ export async function applySourceDiffToLocale(params: {
   const { localeData, previousSource, nextSource, locale } = params;
   const aligned = alignLocaleToSource(localeData, nextSource);
   const delta = buildTranslateDelta(previousSource, nextSource);
-  if (!hasTranslatableDelta(delta)) return aligned;
+  if (!hasTranslatableDelta(delta)) {
+    return withLocalizedSkillCategories(aligned, locale);
+  }
 
   const translated = await translateTextDelta(delta, locale);
-  return applyTranslatedDelta(aligned, translated);
+  return withLocalizedSkillCategories(
+    applyTranslatedDelta(aligned, translated),
+    locale,
+  );
+}
+
+function withLocalizedSkillCategories(
+  data: MasterResume,
+  locale: string,
+): MasterResume {
+  return {
+    ...data,
+    skills: localizeSkillCategories(data.skills, locale),
+  };
 }
 
 export async function translateMasterResume(
@@ -732,7 +755,10 @@ export async function translateMasterResume(
   const fullDelta = toTranslateTextPayload(data);
   if (!hasLlmKey()) {
     const translated = await translateTextDelta(fullDelta, locale);
-    return applyTranslatedDelta(data, translated);
+    return withLocalizedSkillCategories(
+      applyTranslatedDelta(data, translated),
+      locale,
+    );
   }
 
   const language = localeLanguageName(locale);
@@ -744,7 +770,8 @@ export async function translateMasterResume(
 
 Rules:
 - Return ONLY a JSON object with the same shape and the same "id" values.
-- Translate user-facing text (names of roles/schools when natural, summary, bullets, metrics, skills, projects, certifications, references role/company/name, hobbies name/description, location).
+- Translate user-facing text (names of roles/schools when natural, summary, bullets, metrics, skill names, projects, certifications, references role/company/name, hobbies name/description, location).
+- Keep skill "category" values in English exactly as given (Languages & Frameworks, Databases & APIs, Cloud & Infrastructure, Tools & Environments, Other, or any custom English category). Do not translate category names.
 - Do not invent new fields or content.
 - Do not add URLs, emails, dates, or image paths — they are omitted on purpose.
 
@@ -753,5 +780,8 @@ ${JSON.stringify(textPayload)}`,
   });
 
   const parsed = translateTextSchema.parse(extractJsonObject(text));
-  return applyTranslatedText(data, parsed);
+  return withLocalizedSkillCategories(
+    applyTranslatedText(data, parsed),
+    locale,
+  );
 }
