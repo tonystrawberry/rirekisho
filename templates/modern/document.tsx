@@ -159,6 +159,34 @@ export function ModernDocument({
               </Text>
             ),
           )}
+          {data.projects.length ? (
+            <>
+              <Text style={styles.section}>{sectionLabel("projects", locale)}</Text>
+              {data.projects.map((p) => {
+                const logo = logoSrcById?.[p.id];
+                return (
+                  <View key={p.id} style={styles.itemRow} wrap={false}>
+                    {logo ? <Image src={logo} style={styles.logo} /> : null}
+                    <View style={styles.itemBody}>
+                      <Text style={styles.itemTitle}>{p.name}</Text>
+                      {p.url ? <Text style={styles.muted}>{p.url}</Text> : null}
+                      {p.description ? <Text>{p.description}</Text> : null}
+                      {p.technologies.length ? (
+                        <Text style={styles.muted}>
+                          {p.technologies.join(" · ")}
+                        </Text>
+                      ) : null}
+                      {p.highlights.map((h, i) => (
+                        <Text key={i} style={styles.bullet}>
+                          • {h}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })}
+            </>
+          ) : null}
           {(data.certifications ?? []).length ? (
             <>
               <Text style={styles.section}>{sectionLabel("certifications", locale)}</Text>

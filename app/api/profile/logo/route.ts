@@ -35,7 +35,9 @@ export async function POST(req: Request) {
 
   if (!profileId) return badRequest("profileId is required");
   if (!isLogoSection(section)) {
-    return badRequest("section must be experience, education, or certifications");
+    return badRequest(
+      "section must be experience, education, certifications, or projects",
+    );
   }
   if (!itemId) return badRequest("itemId is required");
   if (!(file instanceof File)) return badRequest("logo file is required");
@@ -91,7 +93,9 @@ export async function DELETE(req: Request) {
   const itemId = searchParams.get("itemId") || "";
   if (!profileId) return badRequest("profileId is required");
   if (!isLogoSection(section)) {
-    return badRequest("section must be experience, education, or certifications");
+    return badRequest(
+      "section must be experience, education, certifications, or projects",
+    );
   }
   if (!itemId) return badRequest("itemId is required");
 

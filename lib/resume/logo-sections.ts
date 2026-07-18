@@ -1,12 +1,17 @@
 import type { MasterResume } from "@/lib/resume/schema";
 
-export type LogoSection = "experience" | "education" | "certifications";
+export type LogoSection =
+  | "experience"
+  | "education"
+  | "certifications"
+  | "projects";
 
 export function isLogoSection(value: string): value is LogoSection {
   return (
     value === "experience" ||
     value === "education" ||
-    value === "certifications"
+    value === "certifications" ||
+    value === "projects"
   );
 }
 
@@ -18,6 +23,7 @@ export function getLogoSectionItems(
 ): WithLogo[] {
   if (section === "experience") return data.experience;
   if (section === "education") return data.education;
+  if (section === "projects") return data.projects;
   return data.certifications ?? [];
 }
 

@@ -65,6 +65,8 @@ export const projectItemSchema = z.object({
   url: z.string().optional(),
   highlights: z.array(z.string()).default([]),
   technologies: z.array(z.string()).default([]),
+  /** Project / product icon path (/uploads/...) or URL */
+  logoUrl: z.string().optional(),
   provenance: provenanceSchema,
   sourceRefs: z.array(z.string()).optional(),
 });

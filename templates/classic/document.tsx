@@ -139,8 +139,26 @@ export function ClassicDocument({
             <Text style={styles.section}>{sectionLabel("projects", locale)}</Text>
             {data.projects.map((p) => (
               <View key={p.id}>
-                <Text style={styles.itemTitle}>{p.name}</Text>
-                {p.description ? <Text>{p.description}</Text> : null}
+                <View style={styles.itemRow} wrap={false}>
+                  {logoSrcById?.[p.id] ? (
+                    <Image src={logoSrcById[p.id]} style={styles.logo} />
+                  ) : null}
+                  <View style={styles.itemBody}>
+                    <Text style={styles.itemTitle}>{p.name}</Text>
+                    {p.url ? <Text style={styles.meta}>{p.url}</Text> : null}
+                    {p.description ? <Text>{p.description}</Text> : null}
+                    {p.technologies.length ? (
+                      <Text style={styles.meta}>
+                        {p.technologies.join(" · ")}
+                      </Text>
+                    ) : null}
+                    {p.highlights.map((h, i) => (
+                      <Text key={i} style={styles.bullet}>
+                        • {h}
+                      </Text>
+                    ))}
+                  </View>
+                </View>
               </View>
             ))}
           </>

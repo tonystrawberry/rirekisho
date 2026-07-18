@@ -538,12 +538,12 @@ export function ClassicPreview({
         />
       </section>
 
-      {data.projects.length ? (
+      {(data.projects.length || canEdit) ? (
         <section className="resume-section mt-6">
           <PreviewSectionTitle
             title={t("projects")}
             keepWithNext
-            canEdit={canEdit}
+            canEdit={canEdit && data.projects.length > 0}
             onDeleteSection={() =>
               onPatch?.({ projects: deleteItemsMarkers(data.projects) })
             }
@@ -552,8 +552,11 @@ export function ClassicPreview({
           <div data-resume-block>
             <ProjectSection
               projects={data.projects}
+              profileId={profileId}
+              editable={editable}
               textEditable={canEdit}
               onPatch={onPatch}
+              onMediaChanged={onMediaChanged}
             />
           </div>
         </section>

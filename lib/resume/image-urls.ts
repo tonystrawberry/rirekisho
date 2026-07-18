@@ -39,5 +39,9 @@ export function bustResumeImageUrls(
       ...c,
       logoUrl: withImageCacheBuster(c.logoUrl, cacheKey),
     })),
+    projects: data.projects.map((p) => ({
+      ...p,
+      logoUrl: withImageCacheBuster(p.logoUrl, cacheKey),
+    })),
   };
 }

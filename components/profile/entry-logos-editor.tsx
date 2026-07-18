@@ -10,10 +10,14 @@ export function EntryLogosEditor({
   data: MasterResume;
   onChanged?: () => void;
 }) {
-  if (!data.experience.length && !data.education.length) {
+  if (
+    !data.experience.length &&
+    !data.education.length &&
+    !data.projects.length
+  ) {
     return (
       <p className="text-sm text-muted">
-        Add experience or education in chat first, then attach logos here.
+        Add experience, education, or projects first, then attach logos here.
       </p>
     );
   }
@@ -49,6 +53,23 @@ export function EntryLogosEditor({
               itemId={ed.id}
               label={ed.institution}
               initialLogoUrl={ed.logoUrl}
+              onChanged={onChanged}
+            />
+          ))}
+        </div>
+      ) : null}
+      {data.projects.length ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Project logos
+          </p>
+          {data.projects.map((p) => (
+            <ItemLogoUpload
+              key={p.id}
+              section="projects"
+              itemId={p.id}
+              label={p.name}
+              initialLogoUrl={p.logoUrl}
               onChanged={onChanged}
             />
           ))}

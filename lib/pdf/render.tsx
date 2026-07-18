@@ -22,6 +22,12 @@ export async function renderResumePdf(
     const src = resolveImageSrcForPdf(ed.logoUrl);
     if (src && !ed.logoUrl?.endsWith(".svg")) logoSrcById[ed.id] = src;
   }
+  for (const project of data.projects) {
+    const src = resolveImageSrcForPdf(project.logoUrl);
+    if (src && !project.logoUrl?.endsWith(".svg")) {
+      logoSrcById[project.id] = src;
+    }
+  }
 
   const doc =
     templateId === "modern" ? (
