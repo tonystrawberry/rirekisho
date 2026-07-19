@@ -5,6 +5,7 @@ import {
   DEFAULT_PRIMARY_COLOR,
   normalizePrimaryColor,
 } from "@/lib/resume/theme-color";
+import { cn } from "@/lib/utils";
 
 export function ThemeColorPicker({
   profileId,
@@ -35,17 +36,23 @@ export function ThemeColorPicker({
   }
 
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted">Primary</span>
+    <label
+      className={cn(
+        "relative inline-block h-8 w-8 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border",
+        busy && "opacity-50",
+      )}
+      style={{ backgroundColor: color }}
+      title={`Resume color ${color}`}
+    >
+      <span className="sr-only">Resume primary color</span>
       <input
         type="color"
         value={color}
         disabled={busy}
         onChange={(e) => void pick(e.target.value)}
-        className="h-9 w-12 cursor-pointer rounded border border-border bg-card p-0.5 disabled:opacity-50"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         aria-label="Resume primary color"
       />
-      <span className="font-mono text-xs text-muted">{color}</span>
     </label>
   );
 }

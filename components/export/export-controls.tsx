@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronDown, FileDown, FileText, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IncompleteWarning } from "@/components/export/incomplete-warning";
 import { RESUME_LOCALES } from "@/lib/resume/locales";
 import type { MasterResume } from "@/lib/resume/schema";
+import { cn } from "@/lib/utils";
 
 type PendingExport = "pdf" | "docx" | null;
 
@@ -23,10 +25,28 @@ export function ExportControls({
   const [busy, setBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
   const [docxBusy, setDocxBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingExport, setPendingExport] = useState<PendingExport>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   async function translate(next: string) {
     if (busy || shareBusy || docxBusy) return;
@@ -55,6 +75,7 @@ export function ExportControls({
 
   async function share() {
     if (busy || shareBusy || docxBusy) return;
+    setMenuOpen(false);
     setShareBusy(true);
     setError(null);
     setCopied(false);
@@ -88,9 +109,11 @@ export function ExportControls({
     setError(null);
     if (hasCriticalGaps && !acknowledgeIncomplete) {
       setPendingExport("pdf");
+      setMenuOpen(false);
       return;
     }
     setPendingExport(null);
+    setMenuOpen(false);
     window.print();
   }
 
@@ -99,9 +122,11 @@ export function ExportControls({
     setError(null);
     if (hasCriticalGaps && !acknowledgeIncomplete) {
       setPendingExport("docx");
+      setMenuOpen(false);
       return;
     }
     setPendingExport(null);
+    setMenuOpen(false);
     setDocxBusy(true);
     try {
       const res = await fetch("/api/export/docx", {
@@ -140,72 +165,103 @@ export function ExportControls({
   const anyBusy = busy || shareBusy || docxBusy;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {RESUME_LOCALES.map((l) => (
-          <Button
-            key={l.id}
-            size="sm"
-            variant={locale === l.id ? "default" : "outline"}
-            disabled={anyBusy}
-            onClick={() => void translate(l.id)}
-          >
-            {l.label}
-          </Button>
-        ))}
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={anyBusy}
-          onClick={() => exportPdf(false)}
-        >
-          Export PDF
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={anyBusy}
-          onClick={() => void exportDocx(false)}
-        >
-          {docxBusy ? "Exporting…" : "Export Word"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={anyBusy}
-          onClick={() => void share()}
-        >
-          {shareBusy ? "Sharing…" : "Share"}
-        </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      <div
+        role="group"
+        aria-label="Language"
+        className="inline-flex rounded-md border border-border bg-card p-0.5"
+      >
+        {RESUME_LOCALES.map((l) => {
+          const active = locale === l.id;
+          return (
+            <button
+              key={l.id}
+              type="button"
+              disabled={anyBusy}
+              onClick={() => void translate(l.id)}
+              className={cn(
+                "rounded-[5px] px-2.5 py-1 text-xs font-medium transition-colors",
+                "disabled:pointer-events-none disabled:opacity-50",
+                active
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted hover:bg-surface hover:text-foreground",
+              )}
+            >
+              {l.label}
+            </button>
+          );
+        })}
       </div>
+
+      <div className="relative" ref={menuRef}>
+        <Button
+          size="sm"
+          variant="default"
+          disabled={anyBusy}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          onClick={() => setMenuOpen((o) => !o)}
+          className="gap-1"
+        >
+          {docxBusy ? "Exporting…" : shareBusy ? "Sharing…" : "Export"}
+          <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+        </Button>
+        {menuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 z-30 mt-1 w-52 overflow-hidden rounded-md border border-border bg-card py-1 shadow-md"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
+              onClick={() => exportPdf(false)}
+            >
+              <FileDown className="h-3.5 w-3.5 text-muted" />
+              PDF
+              <span className="ml-auto text-[10px] text-muted">Print</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
+              onClick={() => void exportDocx(false)}
+            >
+              <FileText className="h-3.5 w-3.5 text-muted" />
+              Word (.docx)
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface"
+              onClick={() => void share()}
+            >
+              <Link2 className="h-3.5 w-3.5 text-muted" />
+              Share link
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {busy ? (
+        <p className="text-xs text-muted">Translating…</p>
+      ) : null}
       {shareUrl ? (
-        <div className="rounded-md border border-border bg-card px-3 py-2 text-xs">
+        <div className="basis-full rounded-md border border-border bg-card px-3 py-2 text-xs">
           <p className="text-muted">
-            Public link created for{" "}
-            <span className="font-medium text-foreground">
-              {RESUME_LOCALES.find((l) => l.id === locale)?.label ?? locale}
-            </span>
-            {copied ? " · copied to clipboard" : ""}
-          </p>
-          <p className="mt-1 break-all font-mono">{shareUrl}</p>
-          <p className="mt-2">
-            <Link href="/sharing" className="text-accent underline-offset-2 hover:underline">
+            Link ready
+            {copied ? " · copied" : ""} ·{" "}
+            <Link
+              href="/sharing"
+              className="text-accent underline-offset-2 hover:underline"
+            >
               Manage shares
             </Link>
           </p>
+          <p className="mt-1 break-all font-mono">{shareUrl}</p>
         </div>
       ) : null}
-      {busy ? (
-        <p className="text-xs text-muted">Translating… this can take a few seconds.</p>
-      ) : !shareUrl ? (
-        <p className="text-xs text-muted">
-          PDF opens print → Save as PDF (margins{" "}
-          <span className="font-medium text-foreground">None</span>). Word
-          downloads a classical Times New Roman .docx. Share creates a public
-          link for the selected language.
-        </p>
-      ) : null}
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? <p className="basis-full text-sm text-danger">{error}</p> : null}
       <IncompleteWarning
         open={pendingExport != null}
         onCancel={() => setPendingExport(null)}

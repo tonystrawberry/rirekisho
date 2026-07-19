@@ -1,5 +1,5 @@
 import type { MasterResume, Provenance, ResumePatch } from "@/lib/resume/schema";
-import { isItemDeleteMarker } from "@/lib/resume/schema";
+import { isItemDeleteMarker, masterResumeSchema } from "@/lib/resume/schema";
 import { computeCompleteness } from "@/lib/resume/completeness";
 
 function isUserConfirmed(provenance: Provenance) {
@@ -262,5 +262,6 @@ export function applyConfirmedPatch(
 
   const completeness = computeCompleteness(next);
   next.meta.gaps = completeness.gaps;
-  return next;
+  // Normalize (e.g. fold legacy experience.metrics into bullets).
+  return masterResumeSchema.parse(next);
 }

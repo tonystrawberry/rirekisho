@@ -48,14 +48,6 @@ export function computeCompleteness(data: MasterResume): CompletenessResult {
     });
   } else {
     data.experience.forEach((exp, i) => {
-      if (!exp.metrics.length) {
-        gaps.push({
-          section: "experience",
-          path: `experience[${i}].metrics`,
-          severity: "high",
-          message: `Add a measurable outcome for ${exp.title} at ${exp.company}`,
-        });
-      }
       if (!exp.bullets.length || exp.bullets.every((b) => b.length < 20)) {
         gaps.push({
           section: "experience",

@@ -1,7 +1,7 @@
 "use client";
 
 import { TEMPLATES, type TemplateId } from "@/lib/resume/templates";
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 export function TemplateSwitcher({
   value,
@@ -11,17 +11,11 @@ export function TemplateSwitcher({
   onChange: (id: TemplateId) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {TEMPLATES.map((t) => (
-        <Button
-          key={t.id}
-          size="sm"
-          variant={value === t.id ? "default" : "outline"}
-          onClick={() => onChange(t.id)}
-        >
-          {t.name}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      aria-label="Template"
+      value={value}
+      options={TEMPLATES.map((t) => ({ id: t.id, label: t.name }))}
+      onChange={onChange}
+    />
   );
 }

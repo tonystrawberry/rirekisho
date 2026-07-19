@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ResumeFrame } from "@/components/preview/resume-frame";
+import { APP_NAME } from "@/lib/brand";
 import type { MasterResume } from "@/lib/resume/schema";
 import type { TemplateId } from "@/lib/resume/templates";
 import { resumeThemeCssVars } from "@/lib/resume/theme-color";
@@ -28,7 +29,9 @@ export function PublicResumeView({
       <header className="border-b border-border bg-card/80 print:hidden">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-sm text-muted">Shared resume · {languageLabel}</p>
+            <p className="text-sm text-muted">
+              Shared via {APP_NAME} · {languageLabel}
+            </p>
             <h1 className="text-lg font-semibold tracking-tight">
               {label || data.identity.fullName}
             </h1>

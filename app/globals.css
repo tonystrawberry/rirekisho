@@ -5,8 +5,9 @@
   --foreground: #1a2332;
   --card: #ffffff;
   --muted: #5c6b7a;
-  --accent: #0f6e56;
-  --accent-foreground: #f4fbf8;
+  /* Brand coral from rirekisho! mark */
+  --accent: #ff5757;
+  --accent-foreground: #ffffff;
   --border: #d9e0e6;
   --danger: #b42318;
   --surface: #eef3f7;
@@ -28,8 +29,8 @@
 
 body {
   background:
-    radial-gradient(1200px 600px at 10% -10%, #d7ebe3 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #dde7f2 0%, transparent 50%),
+    radial-gradient(1200px 600px at 10% -10%, #ffd4d4 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #ffe8e0 0%, transparent 50%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

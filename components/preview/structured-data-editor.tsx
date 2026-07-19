@@ -94,13 +94,13 @@ export function StructuredDataEditorButton({
         type="button"
         size="sm"
         variant="outline"
-        className="gap-1.5"
+        className="h-8 w-8 px-0"
         disabled={disabled}
         title={disabled ? disabledReason : "Edit structured resume JSON"}
+        aria-label="Edit structured resume JSON"
         onClick={() => onOpenChange(true)}
       >
         <Braces className="h-3.5 w-3.5" />
-        Edit data
       </Button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>

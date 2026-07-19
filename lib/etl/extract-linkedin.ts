@@ -169,7 +169,6 @@ export function mapLinkedInPayloadToResume(
         endDate: isPresentEnd(end) ? undefined : formatDate(end),
         current: isPresentEnd(end),
         bullets,
-        metrics: [],
         provenance: "linkedin" as const,
         sourceRefs: [linkedInUrl],
       };
@@ -271,7 +270,7 @@ export async function extractResumeFromLinkedInPayload(
 Rules:
 - Use provenance "linkedin" on all items.
 - Give stable unique ids (li_exp_1, li_edu_1, li_skill_1, …).
-- Prefer concrete bullets from descriptions; do not invent employers, dates, or metrics.
+- Prefer concrete bullets from descriptions; do not invent employers, dates, or outcomes.
 - Put the LinkedIn URL in identity.links as { label: "LinkedIn", url: "${profileUrl}" }.
 - Leave proficiency unset for skills unless clearly stated.
 - Leave references empty unless explicitly present.

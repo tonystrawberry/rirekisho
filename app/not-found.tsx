@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand/brand-mark";
+import { APP_NAME } from "@/lib/brand";
 
 export default function NotFound() {
   return (
     <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-6 py-16">
-      <p className="text-sm font-medium uppercase tracking-[0.2em] text-accent">
-        AI Resume Builder
-      </p>
+      <BrandMark size={56} className="rounded-xl" decorative />
+      <p className="mt-4 text-sm font-medium text-muted">{APP_NAME}</p>
       <p className="mt-6 font-mono text-6xl font-semibold tracking-tight text-foreground/20 sm:text-7xl">
         404
       </p>

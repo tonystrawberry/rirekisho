@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Resume Builder",
-  description: "Build your resume through chat, then export a polished PDF",
+  title: {
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`,
+  },
+  description: APP_TAGLINE,
+  applicationName: APP_NAME,
+  icons: {
+    icon: [{ url: "/brand/rirekisho.png", type: "image/png" }],
+    apple: [{ url: "/brand/rirekisho.png" }],
+  },
 };
 
 export default function RootLayout({

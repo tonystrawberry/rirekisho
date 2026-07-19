@@ -1,4 +1,4 @@
-# ✨ AI Resume Builder
+# rirekisho!
 
 Build polished resumes through a **stateful AI chat** — import LinkedIn, fill gaps with guided enrichment, edit inline on a live A4 preview, translate to Japanese & French, then export **PDF** or **Word**.
 

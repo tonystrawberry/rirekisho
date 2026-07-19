@@ -88,7 +88,7 @@ export function ClassicDocument({
                     .filter(Boolean)
                     .join(" – ")}
                 </Text>
-                {[...exp.bullets, ...exp.metrics].map((b, i) => (
+                {[...exp.bullets].map((b, i) => (
                   <Text key={i} style={styles.bullet}>
                     • {b}
                   </Text>

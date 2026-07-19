@@ -35,12 +35,12 @@ export function FullscreenA4PreviewButton({
         type="button"
         size="sm"
         variant="outline"
-        className="gap-1.5"
+        className="h-8 w-8 px-0"
         onClick={() => onOpenChange(true)}
         title="Full screen A4 preview"
+        aria-label="Full screen A4 preview"
       >
         <Maximize2 className="h-3.5 w-3.5" />
-        Full screen
       </Button>
 
       <Dialog open={open} onOpenChange={onOpenChange}>

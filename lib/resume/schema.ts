@@ -17,7 +17,22 @@ const linkSchema = z.object({
   url: z.string().url().or(z.string().min(1)),
 });
 
-export const experienceItemSchema = z.object({
+export const experienceItemSchema = z.preprocess((raw) => {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  const bullets = Array.isArray(r.bullets)
+    ? r.bullets.filter((b): b is string => typeof b === "string")
+    : [];
+  const metrics = Array.isArray(r.metrics)
+    ? r.metrics.filter((m): m is string => typeof m === "string")
+    : [];
+  for (const m of metrics) {
+    const trimmed = m.trim();
+    if (trimmed && !bullets.includes(trimmed)) bullets.push(trimmed);
+  }
+  const { metrics: _omit, ...rest } = r;
+  return { ...rest, bullets };
+}, z.object({
   id: z.string(),
   company: z.string(),
   title: z.string(),
@@ -26,12 +41,11 @@ export const experienceItemSchema = z.object({
   endDate: z.string().optional(),
   current: z.boolean().optional(),
   bullets: z.array(z.string()).default([]),
-  metrics: z.array(z.string()).default([]),
   /** Company logo path (/uploads/...) or URL */
   logoUrl: z.string().optional(),
   provenance: provenanceSchema,
   sourceRefs: z.array(z.string()).optional(),
-});
+}));
 
 export const educationItemSchema = z.object({
   id: z.string(),

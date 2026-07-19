@@ -10,6 +10,7 @@ import { ExportControls } from "@/components/export/export-controls";
 import { FullscreenA4PreviewButton } from "@/components/preview/fullscreen-a4-preview";
 import { StructuredDataEditorButton } from "@/components/preview/structured-data-editor";
 import { Card } from "@/components/ui/card";
+import { CompletenessRing } from "@/components/preview/completeness-ring";
 import type { CompletenessResult } from "@/lib/resume/completeness";
 import { computeCompleteness } from "@/lib/resume/completeness";
 import { bustResumeImageUrls } from "@/lib/resume/image-urls";
@@ -306,12 +307,17 @@ export function WorkspaceClient({
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-sm text-muted">Completeness</p>
-                <p className="text-2xl font-semibold">{completeness.score}%</p>
+                <div className="mt-1 flex items-center gap-2.5">
+                  <CompletenessRing score={completeness.score} size={22} strokeWidth={3} />
+                  <p className="text-2xl font-semibold tabular-nums">
+                    {completeness.score}%
+                  </p>
+                </div>
               </div>
               <ul className="max-w-md space-y-1 text-xs text-muted">
                 {completeness.gaps.slice(0, 3).map((g, i) => (
                   <li key={g.path ?? `${g.section}-${i}`}>
-                    <span className="font-medium text-foreground">
+                    <span className="font-medium uppercase tracking-wide text-foreground">
                       {g.section}
                     </span>{" "}
                     — {g.message}
@@ -335,20 +341,20 @@ export function WorkspaceClient({
 
         <div className="resume-workspace-panel space-y-3 xl:sticky xl:top-4">
           <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-medium">Preview</h2>
               <p className="text-xs text-muted">
                 {previewUpdatedAt
                   ? `Updated ${previewUpdatedAt} · click text to edit`
                   : isSourceLocale
                     ? "Click any text on the resume to edit"
-                    : "Click any text to fix this translation (source language stays unchanged)"}
+                    : "Click any text to fix this translation"}
               </p>
               {editError ? (
                 <p className="mt-1 text-xs text-danger">{editError}</p>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <TemplateSwitcher
                 value={templateId}
                 onChange={(id) => void changeTemplate(id)}
@@ -372,17 +378,15 @@ export function WorkspaceClient({
                 locale={locale}
                 primaryColor={primaryColor}
               />
+              <ExportControls
+                profileId={profileId}
+                locale={locale}
+                onLocaleChange={(next, data) => void changeLocale(next, data)}
+                hasCriticalGaps={completeness.gaps.some(
+                  (g) => g.severity === "critical",
+                )}
+              />
             </div>
-          </div>
-          <div className="print:hidden">
-            <ExportControls
-              profileId={profileId}
-              locale={locale}
-              onLocaleChange={(next, data) => void changeLocale(next, data)}
-              hasCriticalGaps={completeness.gaps.some(
-                (g) => g.severity === "critical",
-              )}
-            />
           </div>
           <div
             className="resume-print-root max-h-[calc(100vh-10rem)] overflow-auto rounded-xl border border-border bg-surface/70 p-3 shadow-sm print:max-h-none print:overflow-visible"

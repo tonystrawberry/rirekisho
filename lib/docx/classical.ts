@@ -350,7 +350,7 @@ export async function renderClassicalDocx(
           },
         ),
       );
-      for (const b of [...exp.bullets, ...exp.metrics]) {
+      for (const b of exp.bullets) {
         if (b.trim()) children.push(bullet(b.trim()));
       }
       children.push(emptyLine());

@@ -11,7 +11,6 @@ describe("mergeMasterResume", () => {
         company: "Acme Cloud",
         title: "Senior Software Engineer",
         bullets: ["Led platform work"],
-        metrics: [],
         provenance: "linkedin",
       },
     ];
@@ -22,7 +21,6 @@ describe("mergeMasterResume", () => {
         company: "Acme Cloud",
         title: "Senior Software Engineer",
         bullets: ["Led platform reliability initiatives"],
-        metrics: [],
         provenance: "linkedin",
       },
     ];
@@ -40,8 +38,7 @@ describe("mergeMasterResume", () => {
         id: "exp1",
         company: "Acme",
         title: "Engineer",
-        bullets: ["Built APIs"],
-        metrics: ["+20% conversion"],
+        bullets: ["Built APIs", "+20% conversion"],
         provenance: "user",
       },
     ];
@@ -52,7 +49,6 @@ describe("mergeMasterResume", () => {
         company: "Acme",
         title: "Junior Engineer",
         bullets: ["Did things"],
-        metrics: [],
         provenance: "linkedin",
       },
     ];
@@ -73,13 +69,34 @@ describe("applyConfirmedPatch", () => {
           id: "exp2",
           company: "Beta",
           title: "Lead",
-          bullets: ["Shipped feature"],
-          metrics: ["Cut latency 40%"],
+          bullets: ["Shipped feature", "Cut latency 40%"],
           provenance: "ai_suggested",
         },
       ],
     });
     expect(next.experience[0].provenance).toBe("user");
+  });
+
+  it("folds legacy metrics into bullets when parsing patches", () => {
+    const base = createEmptyMasterResume("Ada");
+    const next = applyConfirmedPatch(base, {
+      experience: [
+        {
+          id: "exp3",
+          company: "Gamma",
+          title: "Engineer",
+          bullets: ["Built APIs"],
+          // Legacy field — schema preprocess should merge into bullets
+          metrics: ["+20% conversion"],
+          provenance: "user",
+        } as never,
+      ],
+    });
+    expect(next.experience[0].bullets).toEqual([
+      "Built APIs",
+      "+20% conversion",
+    ]);
+    expect(next.experience[0]).not.toHaveProperty("metrics");
   });
 
   it("removes items marked with _delete including nested children", () => {
@@ -90,7 +107,6 @@ describe("applyConfirmedPatch", () => {
         company: "Acme",
         title: "Engineer",
         bullets: ["Built APIs", "Led migrations"],
-        metrics: ["+20%"],
         provenance: "user",
       },
       {
@@ -98,7 +114,6 @@ describe("applyConfirmedPatch", () => {
         company: "Beta",
         title: "Lead",
         bullets: ["Shipped"],
-        metrics: [],
         provenance: "user",
       },
     ];

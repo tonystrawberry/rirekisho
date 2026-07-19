@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/auth/account-menu";
+import { BrandWordmark } from "@/components/brand/brand-mark";
 
 const links = [
   { href: "/resumes", label: "Resumes" },
@@ -22,10 +23,13 @@ export default async function AppLayout({
       <header className="border-b border-border/80 bg-card/70 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
-            <Link href="/resumes" className="font-semibold tracking-tight">
-              AI Resume Builder
+            <Link
+              href="/resumes"
+              className="inline-flex items-center hover:opacity-90"
+            >
+              <BrandWordmark markSize={22} />
             </Link>
-            <nav className="flex flex-wrap gap-3 text-sm text-muted">
+            <nav className="flex flex-wrap items-center gap-3 text-sm leading-none text-muted">
               {links.map((l) => (
                 <Link key={l.href} href={l.href} className="hover:text-foreground">
                   {l.label}

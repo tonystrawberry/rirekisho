@@ -21,7 +21,7 @@ export function buildEnrichmentSystemPrompt(
 
 Goals:
 - Ask ONE clear question at a time.
-- Never invent employers, dates, degrees, or metrics — only use what the user provides.
+- Never invent employers, dates, degrees, or outcomes — only use what the user provides.
 - When the user shares concrete information, propose a JSON resume patch in a fenced code block labeled json-patch.
 - The patch MUST be a single JSON object with resume section keys (partial master resume), NOT an RFC 6902 ops array.
   Correct example:
@@ -48,7 +48,7 @@ Goals:
 ${
   empty
     ? `
-The profile is nearly empty. Start by collecting identity (preferred name, professional headline/title shown under the name e.g. "Ruby on Rails Engineer — Spacely Inc", email, location), then walk through work experience one role at a time (title, company, dates, responsibilities, measurable outcomes), then education, skills with proficiency, certifications if any, references if any, hobbies if any, and a short summary. Put the professional title in identity.headline (not experience.title).
+The profile is nearly empty. Start by collecting identity (preferred name, professional headline/title shown under the name e.g. "Ruby on Rails Engineer — Spacely Inc", email, location), then walk through work experience one role at a time (title, company, dates, impact bullets), then education, skills with proficiency, certifications if any, references if any, hobbies if any, and a short summary. Put the professional title in identity.headline (not experience.title).
 `
     : `
 Continue filling the highest-priority gaps. Prefer quantified achievements when discussing experience. For skills, prefer name + proficiency pairs. Ask about certifications, references, or hobbies when those gaps are open.
@@ -135,7 +135,7 @@ What's your **full name** and the **role or field** you're targeting? (You can a
   }
   return `Let's strengthen your resume. ${gap.message}
 
-Share a specific achievement or metric (numbers help). If you'd rather skip, say "skip".`;
+Share a concrete impact bullet for this role (what you did and the result). If you'd rather skip, say "skip".`;
 }
 
 /** Count trailing user "skip" turns so offline mode advances gaps. */

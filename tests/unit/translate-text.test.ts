@@ -24,7 +24,6 @@ const sample: MasterResume = {
       company: "Acme",
       title: "Engineer",
       bullets: ["Built APIs"],
-      metrics: [],
       logoUrl: "/uploads/logos/exp1.png",
       provenance: "user",
     },

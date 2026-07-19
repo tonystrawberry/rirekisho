@@ -109,7 +109,7 @@ export function ModernDocument({
                         .join(" – ")}
                     </Text>
                   ) : null}
-                  {[...exp.bullets, ...exp.metrics].map((b, i) => (
+                  {exp.bullets.map((b, i) => (
                     <Text key={i} style={styles.bullet}>
                       • {b}
                     </Text>

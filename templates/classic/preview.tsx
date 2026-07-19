@@ -311,46 +311,6 @@ export function ClassicPreview({
                       </span>
                     </li>
                   ))}
-                  {exp.metrics.map((m, i) => (
-                    <li key={`m-${i}`} className="group/bullet">
-                      <span className="flex w-full items-start gap-1">
-                        <InlineText
-                          as="span"
-                          multiline
-                          value={m}
-                          editable={canEdit}
-                          className="min-w-0 flex-1"
-                          placeholder="Metric"
-                          onCommit={(next) => {
-                            const metrics = [...exp.metrics];
-                            if (!next.trim()) metrics.splice(i, 1);
-                            else metrics[i] = next;
-                            onPatch?.({
-                              experience: [
-                                { ...exp, metrics, provenance: "user" },
-                              ],
-                            });
-                          }}
-                        />
-                        {canEdit ? (
-                          <PreviewDeleteButton
-                            label="Remove metric"
-                            className="mt-0.5 opacity-0 group-hover/bullet:opacity-100 focus-visible:opacity-100"
-                            onDelete={() => {
-                              const metrics = exp.metrics.filter(
-                                (_, idx) => idx !== i,
-                              );
-                              onPatch?.({
-                                experience: [
-                                  { ...exp, metrics, provenance: "user" },
-                                ],
-                              });
-                            }}
-                          />
-                        ) : null}
-                      </span>
-                    </li>
-                  ))}
                 </ul>
               </div>
               </div>

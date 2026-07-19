@@ -21,7 +21,6 @@ const translateTextSchema = z.object({
       title: z.string(),
       location: z.string().optional(),
       bullets: z.array(z.string()),
-      metrics: z.array(z.string()),
     }),
   ),
   education: z.array(
@@ -121,7 +120,6 @@ export function toTranslateTextPayload(data: MasterResume): TranslateTextPayload
       title: e.title,
       ...(e.location ? { location: e.location } : {}),
       bullets: e.bullets,
-      metrics: e.metrics,
     })),
     education: data.education.map((e) => ({
       id: e.id,
@@ -299,7 +297,6 @@ export function alignLocaleToSource(
         title: l.title,
         location: l.location ?? e.location,
         bullets: l.bullets,
-        metrics: l.metrics,
       };
     }),
     education: source.education.map((e) => {
@@ -427,7 +424,6 @@ export function applyTranslatedDelta(
           title: tr.title,
           location: tr.location ?? e.location,
           bullets: tr.bullets,
-          metrics: tr.metrics,
         };
       }),
     };
@@ -615,7 +611,6 @@ function demoTranslateDelta(
             title: wrap(e.title),
             ...(e.location ? { location: wrap(e.location) } : {}),
             bullets: e.bullets.map(wrap),
-            metrics: e.metrics.map(wrap),
           })),
         }
       : {}),
@@ -770,7 +765,7 @@ export async function translateMasterResume(
 
 Rules:
 - Return ONLY a JSON object with the same shape and the same "id" values.
-- Translate user-facing text (names of roles/schools when natural, summary, bullets, metrics, skill names, projects, certifications, references role/company/name, hobbies name/description, location).
+- Translate user-facing text (names of roles/schools when natural, summary, bullets, skill names, projects, certifications, references role/company/name, hobbies name/description, location).
 - Keep skill "category" values in English exactly as given (Languages & Frameworks, Databases & APIs, Cloud & Infrastructure, Tools & Environments, Other, or any custom English category). Do not translate category names.
 - Do not invent new fields or content.
 - Do not add URLs, emails, dates, or image paths — they are omitted on purpose.
