@@ -13,7 +13,6 @@ export function PublicResumeView({
   locale,
   primaryColor,
   languageLabel,
-  pdfUrl,
   label,
 }: {
   data: MasterResume;
@@ -21,7 +20,6 @@ export function PublicResumeView({
   locale: string;
   primaryColor: string;
   languageLabel: string;
-  pdfUrl: string;
   label?: string | null;
 }) {
   return (
@@ -43,14 +41,6 @@ export function PublicResumeView({
               onClick={() => window.print()}
             >
               Print / Save PDF
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                window.open(pdfUrl, "_blank", "noopener,noreferrer");
-              }}
-            >
-              Download PDF
             </Button>
           </div>
         </div>

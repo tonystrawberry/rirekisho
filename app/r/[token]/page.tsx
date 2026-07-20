@@ -15,7 +15,7 @@ export default async function PublicSharedResumePage({ params }: Props) {
 
   if (!link || link.status !== "active") notFound();
 
-  // Count HTML views separately from PDF downloads (best-effort)
+  // Count HTML views (best-effort)
   void prisma.sharedResumeLink
     .update({
       where: { id: link.id },
@@ -35,7 +35,6 @@ export default async function PublicSharedResumePage({ params }: Props) {
       locale={link.locale}
       primaryColor={link.primaryColor}
       languageLabel={localeLanguageName(link.locale)}
-      pdfUrl={`/api/r/${link.token}/pdf`}
       label={link.label}
     />
   );
