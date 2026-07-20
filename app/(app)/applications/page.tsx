@@ -23,7 +23,6 @@ export default async function ApplicationsPage() {
     appliedAt: a.appliedAt?.toISOString() ?? null,
     linkedResumeId: a.linkedResumeId,
     linkedResumeTitle: a.linkedResume?.title ?? null,
-    coverLetterId: a.coverLetterId,
     updatedAt: a.updatedAt.toISOString(),
   }));
 

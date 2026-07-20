@@ -24,9 +24,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 **Purpose**: Add CoverLetter data model and remove the placeholder `coverLetterId` string from JobApplication
 
-- [ ] T001 Add `CoverLetter` and `CoverLetterConversation` models to `prisma/schema.prisma` per data-model.md (CoverLetter: id, applicationId unique FK → JobApplication onDelete Cascade, content default "", timestamps; CoverLetterConversation: id, coverLetterId unique FK → CoverLetter onDelete Cascade, status, messages Json default [], timestamps)
-- [ ] T002 Update `JobApplication` in `prisma/schema.prisma`: remove `coverLetterId String?` field; add optional relation `coverLetter CoverLetter?`
-- [ ] T003 Run `npx prisma migrate dev` and `npx prisma generate` to apply migration and regenerate the Prisma client
+- [X] T001 Add `CoverLetter` and `CoverLetterConversation` models to `prisma/schema.prisma` per data-model.md (CoverLetter: id, applicationId unique FK → JobApplication onDelete Cascade, content default "", timestamps; CoverLetterConversation: id, coverLetterId unique FK → CoverLetter onDelete Cascade, status, messages Json default [], timestamps)
+- [X] T002 Update `JobApplication` in `prisma/schema.prisma`: remove `coverLetterId String?` field; add optional relation `coverLetter CoverLetter?`
+- [X] T003 Run `npx prisma migrate dev` and `npx prisma generate` to apply migration and regenerate the Prisma client
 
 ---
 
@@ -36,11 +36,11 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 [P] Create cover letter Zod schemas in `lib/applications/cover-letter-schema.ts` — content max 50,000 chars for PATCH; apply-suggestion body with `content` + `confirmReplace: true`
-- [ ] T005 [P] Create cover letter load/save helpers in `lib/applications/cover-letter.ts` — get-or-create CoverLetter + CoverLetterConversation by applicationId; update content; ownership check via session user + JobApplication
-- [ ] T006 [P] Create application AI context builder in `lib/applications/cover-letter.ts` (or adjacent helper) — build ApplicationContext from JobApplication fields + optional linked MasterResumeProfile.data
-- [ ] T007 Remove `coverLetterId` from Zod application schemas in `lib/applications/schema.ts` and from API serializers in `app/api/applications/route.ts` and `app/api/applications/[applicationId]/route.ts`
-- [ ] T008 Remove `coverLetterId` from list page types and create payload in `app/(app)/applications/page.tsx` and `app/(app)/applications/applications-client.tsx` (including "coming soon" cover letter UI from 003)
+- [X] T004 [P] Create cover letter Zod schemas in `lib/applications/cover-letter-schema.ts` — content max 50,000 chars for PATCH; apply-suggestion body with `content` + `confirmReplace: true`
+- [X] T005 [P] Create cover letter load/save helpers in `lib/applications/cover-letter.ts` — get-or-create CoverLetter + CoverLetterConversation by applicationId; update content; ownership check via session user + JobApplication
+- [X] T006 [P] Create application AI context builder in `lib/applications/cover-letter.ts` (or adjacent helper) — build ApplicationContext from JobApplication fields + optional linked MasterResumeProfile.data
+- [X] T007 Remove `coverLetterId` from Zod application schemas in `lib/applications/schema.ts` and from API serializers in `app/api/applications/route.ts` and `app/api/applications/[applicationId]/route.ts`
+- [X] T008 Remove `coverLetterId` from list page types and create payload in `app/(app)/applications/page.tsx` and `app/(app)/applications/applications-client.tsx` (including "coming soon" cover letter UI from 003)
 
 **Checkpoint**: Prisma models ready; helpers and schemas in place; list/API no longer reference placeholder coverLetterId
 
@@ -54,9 +54,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Create server page `app/(app)/applications/[applicationId]/page.tsx` — load application by id + session userId (404 if missing/unauthorized); parse `?tab=information|cover-letter` (default information); pass application + active tab to client
-- [ ] T010 [US1] Create `app/(app)/applications/[applicationId]/application-detail-client.tsx` shell with application title, status badge, and tab headers "Information" / "Cover Letter"; tab switches update URL query `?tab=` without full navigation loss
-- [ ] T011 [US1] Update `app/(app)/applications/applications-client.tsx` so clicking an application row/title navigates to `/applications/[applicationId]` (remove edit-modal open on click); keep create dialog on list page
+- [X] T009 [US1] Create server page `app/(app)/applications/[applicationId]/page.tsx` — load application by id + session userId (404 if missing/unauthorized); parse `?tab=information|cover-letter` (default information); pass application + active tab to client
+- [X] T010 [US1] Create `app/(app)/applications/[applicationId]/application-detail-client.tsx` shell with application title, status badge, and tab headers "Information" / "Cover Letter"; tab switches update URL query `?tab=` without full navigation loss
+- [X] T011 [US1] Update `app/(app)/applications/applications-client.tsx` so clicking an application row/title navigates to `/applications/[applicationId]` (remove edit-modal open on click); keep create dialog on list page
 
 **Checkpoint**: List → detail navigation works; tabs visible; unauthorized access returns 404; browser back returns to list
 
@@ -70,9 +70,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 2
 
-- [ ] T012 [P] [US2] Extract shared application form into `components/applications/application-form.tsx` (title, description, company, job URL, status, applied date, linked resume picker) reusable from create dialog and Information tab
-- [ ] T013 [US2] Wire Information tab in `application-detail-client.tsx` to render `application-form.tsx` pre-filled; submit PATCH to `/api/applications/[applicationId]`; show validation errors; refresh local state on success
-- [ ] T014 [US2] Refactor create dialog in `applications-client.tsx` to use shared `application-form.tsx`; remove list-page edit modal/dialog entirely (FR-016)
+- [X] T012 [P] [US2] Extract shared application form into `components/applications/application-form.tsx` (title, description, company, job URL, status, applied date, linked resume picker) reusable from create dialog and Information tab
+- [X] T013 [US2] Wire Information tab in `application-detail-client.tsx` to render `application-form.tsx` pre-filled; submit PATCH to `/api/applications/[applicationId]`; show validation errors; refresh local state on success
+- [X] T014 [US2] Refactor create dialog in `applications-client.tsx` to use shared `application-form.tsx`; remove list-page edit modal/dialog entirely (FR-016)
 
 **Checkpoint**: Full-page Information edit replaces modal; validation and persistence match existing CRUD behavior
 
@@ -86,12 +86,12 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 3
 
-- [ ] T015 [P] [US3] Implement GET/PATCH handlers in `app/api/applications/[applicationId]/cover-letter/route.ts` per contracts/api.md — ownership-scoped get-or-create; PATCH validates content ≤50k
-- [ ] T016 [P] [US3] Implement cover letter AI system prompt + `coverLetterSuggestion` tool in `lib/ai/cover-letter-chat.ts` (mirror resume chat patterns; inject ApplicationContext; never invent credentials)
-- [ ] T017 [US3] Implement GET/POST chat handlers in `app/api/applications/[applicationId]/cover-letter/chat/route.ts` — load/persist CoverLetterConversation messages; POST streams via AI SDK; persist messages on stream end
-- [ ] T018 [US3] Implement POST apply-suggestion in `app/api/applications/[applicationId]/cover-letter/apply-suggestion/route.ts` — requires `confirmReplace: true`; replaces cover letter content
-- [ ] T019 [US3] Create `components/applications/cover-letter-chat.tsx` — AI chat panel using `@ai-sdk/react` `useChat` against cover-letter chat endpoint; load history via GET; show suggestion confirm UI (reuse `components/chat/patch-confirm.tsx` pattern) before calling apply-suggestion
-- [ ] T020 [US3] Integrate chat panel into Cover Letter tab layout in `application-detail-client.tsx` (left pane); on confirmed suggestion, update editor content state
+- [X] T015 [P] [US3] Implement GET/PATCH handlers in `app/api/applications/[applicationId]/cover-letter/route.ts` per contracts/api.md — ownership-scoped get-or-create; PATCH validates content ≤50k
+- [X] T016 [P] [US3] Implement cover letter AI system prompt + `coverLetterSuggestion` tool in `lib/ai/cover-letter-chat.ts` (mirror resume chat patterns; inject ApplicationContext; never invent credentials)
+- [X] T017 [US3] Implement GET/POST chat handlers in `app/api/applications/[applicationId]/cover-letter/chat/route.ts` — load/persist CoverLetterConversation messages; POST streams via AI SDK; persist messages on stream end
+- [X] T018 [US3] Implement POST apply-suggestion in `app/api/applications/[applicationId]/cover-letter/apply-suggestion/route.ts` — requires `confirmReplace: true`; replaces cover letter content
+- [X] T019 [US3] Create `components/applications/cover-letter-chat.tsx` — AI chat panel using `@ai-sdk/react` `useChat` against cover-letter chat endpoint; load history via GET; show suggestion confirm UI (reuse `components/chat/patch-confirm.tsx` pattern) before calling apply-suggestion
+- [X] T020 [US3] Integrate chat panel into Cover Letter tab layout in `application-detail-client.tsx` (left pane); on confirmed suggestion, update editor content state
 
 **Checkpoint**: AI chat drafts cover letters with app/resume context; history persists; suggestions never auto-apply
 
@@ -105,9 +105,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 4
 
-- [ ] T021 [P] [US4] Create `components/applications/cover-letter-editor.tsx` — markdown textarea + `react-markdown` preview; empty state prompting chat or direct edit; debounce or explicit save calling PATCH `/api/applications/[applicationId]/cover-letter`
-- [ ] T022 [US4] Complete Cover Letter tab split layout in `application-detail-client.tsx` — chat left, editor/preview right (mirror `workspace-client.tsx` pattern); load initial content from GET cover-letter on tab mount
-- [ ] T023 [US4] Ensure AI-applied content and manual edits share one content state so manual edits take precedence after apply; persist on save/blur/navigate
+- [X] T021 [P] [US4] Create `components/applications/cover-letter-editor.tsx` — markdown textarea + `react-markdown` preview; empty state prompting chat or direct edit; debounce or explicit save calling PATCH `/api/applications/[applicationId]/cover-letter`
+- [X] T022 [US4] Complete Cover Letter tab split layout in `application-detail-client.tsx` — chat left, editor/preview right (mirror `workspace-client.tsx` pattern); load initial content from GET cover-letter on tab mount
+- [X] T023 [US4] Ensure AI-applied content and manual edits share one content state so manual edits take precedence after apply; persist on save/blur/navigate
 
 **Checkpoint**: Markdown edit + preview works; content persists across sessions; empty state handled
 
@@ -121,9 +121,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 5
 
-- [ ] T024 [US5] Add unsaved-changes guard on Information tab in `application-detail-client.tsx` — warn or auto-save before switching away when form is dirty (FR-015 / US5 scenarios)
-- [ ] T025 [US5] Keep Cover Letter content + chat mounted or restore from state/API when switching back so draft and history remain available within the session
-- [ ] T026 [US5] Sync tab UI with `?tab=` query on load and on tab click (already started in US1); ensure shared/bookmarked tab URLs activate the correct tab
+- [X] T024 [US5] Add unsaved-changes guard on Information tab in `application-detail-client.tsx` — warn or auto-save before switching away when form is dirty (FR-015 / US5 scenarios)
+- [X] T025 [US5] Keep Cover Letter content + chat mounted or restore from state/API when switching back so draft and history remain available within the session
+- [X] T026 [US5] Sync tab UI with `?tab=` query on load and on tab click (already started in US1); ensure shared/bookmarked tab URLs activate the correct tab
 
 **Checkpoint**: No silent data loss on tab switch; deep links work
 
@@ -137,8 +137,8 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 ### Implementation for User Story 6
 
-- [ ] T027 [US6] Add delete action + confirmation dialog to `application-detail-client.tsx` — call existing `DELETE /api/applications/[applicationId]`; on success `router.push('/applications')`
-- [ ] T028 [US6] Verify cascade: deleting application removes CoverLetter + CoverLetterConversation (Prisma onDelete Cascade from T001); linked resume rows remain
+- [X] T027 [US6] Add delete action + confirmation dialog to `application-detail-client.tsx` — call existing `DELETE /api/applications/[applicationId]`; on success `router.push('/applications')`
+- [X] T028 [US6] Verify cascade: deleting application removes CoverLetter + CoverLetterConversation (Prisma onDelete Cascade from T001); linked resume rows remain
 
 **Checkpoint**: Detail-page delete works end-to-end with confirm/cancel
 
@@ -148,9 +148,9 @@ Paths follow `plan.md` (Next.js App Router): `app/`, `components/`, `lib/`, `pri
 
 **Purpose**: Edge cases, cleanup, and quickstart validation across stories
 
-- [ ] T029 [P] Handle missing/deleted linked resume gracefully on Information tab (unavailable label) and Cover Letter AI context (metadata-only) in `application-form.tsx` / `lib/applications/cover-letter.ts`
-- [ ] T030 [P] Handle AI chat failure with clear error message in `cover-letter-chat.tsx` while keeping manual editor usable
-- [ ] T031 Run full smoke validation from `specs/004-application-cover-letter/quickstart.md` (navigation, Information save, Cover Letter edit/chat/persist, ownership 404, delete cascade)
+- [X] T029 [P] Handle missing/deleted linked resume gracefully on Information tab (unavailable label) and Cover Letter AI context (metadata-only) in `application-form.tsx` / `lib/applications/cover-letter.ts`
+- [X] T030 [P] Handle AI chat failure with clear error message in `cover-letter-chat.tsx` while keeping manual editor usable
+- [X] T031 Run full smoke validation from `specs/004-application-cover-letter/quickstart.md` (navigation, Information save, Cover Letter edit/chat/persist, ownership 404, delete cascade)
 
 ---
 

@@ -15,7 +15,6 @@ function toItem(
     status: ApplicationStatus;
     appliedAt: Date | null;
     linkedResumeId: string | null;
-    coverLetterId: string | null;
     createdAt: Date;
     updatedAt: Date;
     linkedResume: { id: string; title: string } | null;
@@ -31,8 +30,6 @@ function toItem(
     appliedAt: app.appliedAt?.toISOString() ?? null,
     linkedResumeId: app.linkedResumeId,
     linkedResumeTitle: app.linkedResume?.title ?? null,
-    coverLetterId: app.coverLetterId,
-    coverLetterState: "coming_soon" as const,
     createdAt: app.createdAt.toISOString(),
     updatedAt: app.updatedAt.toISOString(),
   };
@@ -93,7 +90,6 @@ export async function POST(req: Request) {
       status: data.status ?? ApplicationStatus.interested,
       appliedAt: data.appliedAt ?? null,
       linkedResumeId: data.linkedResumeId ?? null,
-      coverLetterId: data.coverLetterId ?? null,
     },
     include: { linkedResume: { select: { id: true, title: true } } },
   });

@@ -147,15 +147,65 @@ model JobApplication {
   status         ApplicationStatus @default(interested)
   appliedAt      DateTime?
   linkedResumeId String?
-  coverLetterId  String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   linkedResume MasterResumeProfile? @relation(fields: [linkedResumeId], references: [id], onDelete: SetNull)
+  coverLetter  CoverLetter?
 
   @@index([userId, updatedAt])
   @@index([userId, status])
+}
+
+model CoverLetter {
+  id                    String   @id @default(cuid())
+  applicationId         String   @unique
+  content               String   @default("")
+  subject               String   @default("")
+  templateId            String   @default("classic")
+  primaryColor          String   @default("#0f6e56")
+  sourceLocale          String   @default("en")
+  selectedLocale        String   @default("en")
+  contentVersion        Int      @default(1)
+  recipientName         String?
+  recipientTitle        String?
+  recipientEmail        String?
+  recipientOrganization String?
+  recipientAddress      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  application    JobApplication                 @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  conversation   CoverLetterConversation?
+  presentations  CoverLetterLocalePresentation[]
+  sharedLinks    SharedCoverLetterLink[]
+}
+
+model CoverLetterLocalePresentation {
+  id            String   @id @default(cuid())
+  coverLetterId String
+  locale        String
+  subject       String   @default("")
+  content       String   @default("")
+  sourceVersion Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  coverLetter CoverLetter @relation(fields: [coverLetterId], references: [id], onDelete: Cascade)
+
+  @@unique([coverLetterId, locale])
+}
+
+model CoverLetterConversation {
+  id            String   @id @default(cuid())
+  coverLetterId String   @unique
+  status        String   @default("active")
+  messages      Json     @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  coverLetter CoverLetter @relation(fields: [coverLetterId], references: [id], onDelete: Cascade)
 }
 
 model ChatConversation {
@@ -232,5 +282,29 @@ model SharedResumeLink {
   profile MasterResumeProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId, createdAt])
+  @@index([status])
+}
+
+/// Public share link for a cover letter snapshot in a specific locale.
+model SharedCoverLetterLink {
+  id            String           @id @default(cuid())
+  coverLetterId String
+  token         String           @unique
+  locale        String
+  templateId    String
+  primaryColor  String           @default("#0f6e56")
+  /// Frozen cover letter snapshot: content, subject, identity, meta
+  data          Json
+  sourceVersion Int
+  status        SharedLinkStatus @default(active)
+  label         String?
+  viewCount     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  revokedAt     DateTime?
+
+  coverLetter CoverLetter @relation(fields: [coverLetterId], references: [id], onDelete: Cascade)
+
+  @@index([coverLetterId, createdAt])
   @@index([status])
 }

@@ -20,7 +20,6 @@ export const applicationCreateSchema = z.object({
   status: z.nativeEnum(ApplicationStatus).optional(),
   appliedAt: optionalDate,
   linkedResumeId: z.string().trim().min(1).optional().nullable(),
-  coverLetterId: z.string().trim().min(1).optional().nullable(),
 });
 
 export const applicationUpdateSchema = applicationCreateSchema.partial();

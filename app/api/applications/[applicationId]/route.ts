@@ -17,7 +17,6 @@ function toItem(
     status: ApplicationStatus;
     appliedAt: Date | null;
     linkedResumeId: string | null;
-    coverLetterId: string | null;
     createdAt: Date;
     updatedAt: Date;
     linkedResume: { id: string; title: string } | null;
@@ -33,8 +32,6 @@ function toItem(
     appliedAt: app.appliedAt?.toISOString() ?? null,
     linkedResumeId: app.linkedResumeId,
     linkedResumeTitle: app.linkedResume?.title ?? null,
-    coverLetterId: app.coverLetterId,
-    coverLetterState: "coming_soon" as const,
     createdAt: app.createdAt.toISOString(),
     updatedAt: app.updatedAt.toISOString(),
   };
@@ -107,8 +104,6 @@ export async function PATCH(req: Request, { params }: Params) {
       appliedAt: data.appliedAt === undefined ? undefined : data.appliedAt,
       linkedResumeId:
         data.linkedResumeId === undefined ? undefined : data.linkedResumeId,
-      coverLetterId:
-        data.coverLetterId === undefined ? undefined : data.coverLetterId,
     },
     include: { linkedResume: { select: { id: true, title: true } } },
   });

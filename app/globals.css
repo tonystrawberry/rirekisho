@@ -153,6 +153,31 @@ a {
     max-width: none !important;
     width: 100% !important;
   }
+
+  /* Cover letter fullscreen preview → PDF print */
+  .a4-fullscreen-dialog {
+    position: static !important;
+    inset: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 210mm !important;
+    max-width: none !important;
+    transform: none !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  .a4-fullscreen-preview {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .a4-fullscreen-preview article {
+    box-shadow: none !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
 }
 
 /* On-screen A4 resume pages — always real 210mm width; shell scales to fit */
@@ -188,12 +213,21 @@ a {
   max-width: none !important;
 }
 
-/* Resume theme (scoped via --resume-primary on .resume-print-root) */
+/* Resume / cover letter theme (scoped via --resume-primary) */
 .resume-theme-header {
   background-color: var(--resume-primary, #0f6e56);
   color: var(--resume-primary-fg, #f4fbf8);
 }
 
 .resume-theme-heading {
+  color: var(--resume-primary, #0f6e56);
+}
+
+.cover-letter-theme-sidebar {
+  background-color: var(--resume-primary, #0f6e56);
+  color: var(--resume-primary-fg, #f4fbf8);
+}
+
+.cover-letter-theme-accent {
   color: var(--resume-primary, #0f6e56);
 }
