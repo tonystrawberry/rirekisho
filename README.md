@@ -2,7 +2,7 @@
 
 Build polished resumes through a **stateful AI chat** — import LinkedIn, fill gaps with guided enrichment, edit inline on a live A4 preview, translate to Japanese & French, then export **PDF** or **Word**.
 
-> 📦 Repo: [tonystrawberry/ai-resume-builder](https://github.com/tonystrawberry/ai-resume-builder)
+> 📦 **rirekisho!** — GitHub: [tonystrawberry/rirekisho](https://github.com/tonystrawberry/rirekisho) (repo slug has no `!`)
 
 ---
 
@@ -211,9 +211,11 @@ Product & engineering artifacts for this feature:
 
 ## 🚢 Deploy notes
 
+See **[deployment.md](./deployment.md)** for full Vercel + Neon setup.
+
 Designed to run on **Vercel** (Node runtime):
 
-1. Provision Postgres (e.g. Neon / Vercel Postgres) and set `DATABASE_URL`
+1. Provision Postgres (e.g. Neon) and set `DATABASE_URL`
 2. Set all required env vars in the project settings
 3. Run migrations (`prisma migrate deploy`) in build or a release step
 4. Configure the GitHub OAuth callback for your production URL

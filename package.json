@@ -1,10 +1,11 @@
 {
-  "name": "ai-resume-builder",
+  "name": "rirekisho",
+  "description": "rirekisho! — AI resume builder with chat enrichment and PDF/Word export",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
