@@ -11,7 +11,7 @@ export const APP_SLUG = "rirekisho";
 export const APP_NAME_PLAIN = APP_SLUG;
 
 export const APP_TAGLINE =
-  "Build your resume in a conversation — then export a polished PDF or Word doc.";
+  "Track your applications, build your resume, and write the perfect cover letter.";
 export const APP_LOGO_SRC = "/brand/rirekisho.png";
 /** Coral from the mark — app chrome accent. */
 export const APP_BRAND_COLOR = "#ff5757";
