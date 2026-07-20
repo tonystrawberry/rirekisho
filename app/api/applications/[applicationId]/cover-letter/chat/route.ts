@@ -11,9 +11,12 @@ import { ensureJobPostingParsed } from "@/lib/applications/job-posting";
 import {
   buildCoverLetterSystemPrompt,
   clearLatestSuggestionFromMessages,
-  offlineCoverLetterReply,
 } from "@/lib/ai/cover-letter-chat";
-import { getChatModel, hasLlmKey } from "@/lib/ai/models";
+import {
+  aiUnavailableStreamResponse,
+  getChatModel,
+  hasLlmKey,
+} from "@/lib/ai/models";
 import { prisma } from "@/lib/db";
 
 type Params = { params: Promise<{ applicationId: string }> };
@@ -90,29 +93,7 @@ export async function POST(req: Request, { params }: Params) {
   const conversationId = result.conversation.id;
 
   if (!hasLlmKey()) {
-    const reply = offlineCoverLetterReply(ctx, currentBody);
-    const nextMessages = [
-      ...normalizeMessages(messages, conversationId),
-      {
-        id: `asst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        role: "assistant",
-        content: reply,
-      },
-    ];
-    await saveCoverLetterMessages(conversationId, nextMessages);
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoder.encode(`0:${JSON.stringify(reply)}\n`));
-        controller.close();
-      },
-    });
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Vercel-AI-Data-Stream": "v1",
-      },
-    });
+    return aiUnavailableStreamResponse();
   }
 
   const resultStream = streamText({

@@ -5,11 +5,13 @@ import { masterResumeSchema, type MasterResume } from "@/lib/resume/schema";
 import { computeCompleteness } from "@/lib/resume/completeness";
 import {
   buildEnrichmentSystemPrompt,
-  countTrailingSkips,
-  offlineAssistantReply,
   type EnrichmentJobContext,
 } from "@/lib/ai/enrich-chat";
-import { getChatModel, hasLlmKey } from "@/lib/ai/models";
+import {
+  aiUnavailableStreamResponse,
+  getChatModel,
+  hasLlmKey,
+} from "@/lib/ai/models";
 import {
   getOrCreateConversation,
   saveConversationMessages,
@@ -87,45 +89,8 @@ export async function POST(req: Request) {
   const gaps = computeCompleteness(data).gaps;
   const system = buildEnrichmentSystemPrompt(data, gaps, jobContext);
 
-  const emptyProfile =
-    data.experience.length === 0 &&
-    data.education.length === 0 &&
-    data.skills.length === 0 &&
-    data.projects.length === 0 &&
-    (!data.summary || data.summary.trim().length < 20);
-
   if (!hasLlmKey()) {
-    const reply = offlineAssistantReply(gaps, {
-      skipCount: countTrailingSkips(messages),
-      emptyProfile:
-        emptyProfile && messages.filter((m) => m.role === "user").length === 0,
-    });
-    const nextMessages = [
-      ...messages.map((m, i) => ({
-        id: m.id?.trim() ? m.id : `${conversation.id}-${m.role}-${i}`,
-        role: m.role,
-        content: m.content,
-      })),
-      {
-        id: `asst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        role: "assistant",
-        content: reply,
-      },
-    ];
-    await saveConversationMessages(conversation.id, nextMessages);
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoder.encode(`0:${JSON.stringify(reply)}\n`));
-        controller.close();
-      },
-    });
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "X-Vercel-AI-Data-Stream": "v1",
-      },
-    });
+    return aiUnavailableStreamResponse();
   }
 
   const result = streamText({

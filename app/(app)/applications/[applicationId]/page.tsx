@@ -24,6 +24,7 @@ import {
   type DetailTab,
   type LinkedResumeWorkspace,
 } from "./application-detail-client";
+import { hasLlmKey } from "@/lib/ai/models";
 
 type PageProps = {
   params: Promise<{ applicationId: string }>;
@@ -79,6 +80,7 @@ async function loadLinkedResumeWorkspace(
     initialPrimaryColor: primaryColor,
     initialLocale: profile.selectedLocale,
     sourceLocale: profile.sourceLocale,
+    aiEnabled: hasLlmKey(),
   };
 }
 
@@ -134,6 +136,7 @@ export default async function ApplicationDetailPage({
       initialTab={activeTab}
       linkedResumeWorkspace={linkedResumeWorkspace}
       initialPersonal={identityToPersonalInput(initialIdentity)}
+      aiEnabled={hasLlmKey()}
     />
   );
 }

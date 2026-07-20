@@ -156,36 +156,3 @@ export function extractJsonPatch(text: string): Record<string, unknown> | null {
   }
 }
 
-export function offlineAssistantReply(
-  gaps: ResumeGap[],
-  options?: { skipCount?: number; emptyProfile?: boolean },
-): string {
-  if (options?.emptyProfile) {
-    return `Let's build your resume from scratch.
-
-What's your **full name** and the **role or field** you're targeting? (You can also share your email and location.)`;
-  }
-
-  const skipCount = options?.skipCount ?? 0;
-  const gap = gaps[skipCount] ?? gaps[0];
-  if (!gap) {
-    return "Your resume looks fairly complete. What would you like to improve next—summary, a role bullet, or skills?";
-  }
-  return `Let's strengthen your resume. ${gap.message}
-
-Share a concrete impact bullet for this role (what you did and the result). If you'd rather skip, say "skip".`;
-}
-
-/** Count trailing user "skip" turns so offline mode advances gaps. */
-export function countTrailingSkips(
-  messages: Array<{ role: string; content: string }>,
-): number {
-  let n = 0;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m.role !== "user") continue;
-    if (m.content.trim().toLowerCase() === "skip") n += 1;
-    else break;
-  }
-  return n;
-}

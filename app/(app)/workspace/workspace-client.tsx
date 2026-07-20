@@ -48,6 +48,7 @@ export function WorkspaceClient({
   sourceLocale,
   embedded = false,
   applicationId = null,
+  aiEnabled = true,
 }: {
   profileId: string;
   resumeTitle: string;
@@ -64,6 +65,7 @@ export function WorkspaceClient({
   embedded?: boolean;
   /** Application Resume tab — injects parsed job posting into chat. */
   applicationId?: string | null;
+  aiEnabled?: boolean;
 }) {
   const [completeness, setCompleteness] = useState(initialCompleteness);
   const [sourceData, setSourceData] = useState(initialData);
@@ -361,6 +363,7 @@ export function WorkspaceClient({
             profileVersion={version}
             onProfileUpdated={(profile) => void applyProfileUpdate(profile)}
             applicationId={applicationId}
+            aiEnabled={aiEnabled}
           />
         </div>
 

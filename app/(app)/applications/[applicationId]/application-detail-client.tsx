@@ -67,6 +67,7 @@ export type LinkedResumeWorkspace = {
   initialPrimaryColor: string;
   initialLocale: string;
   sourceLocale: string;
+  aiEnabled: boolean;
 };
 
 export type ApplicationDetail = {
@@ -124,11 +125,13 @@ export function ApplicationDetailClient({
   initialTab,
   linkedResumeWorkspace,
   initialPersonal,
+  aiEnabled = true,
 }: {
   application: ApplicationDetail;
   initialTab: DetailTab;
   linkedResumeWorkspace: LinkedResumeWorkspace | null;
   initialPersonal: PersonalFormState;
+  aiEnabled?: boolean;
 }) {
   const router = useRouter();
   const [application, setApplication] = useState(initialApplication);
@@ -793,6 +796,7 @@ export function ApplicationDetailClient({
                 onSuggestionApplied={(content) => {
                   setCoverContent(content);
                 }}
+                aiEnabled={aiEnabled}
               />
             ) : (
               <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted">

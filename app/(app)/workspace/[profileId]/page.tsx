@@ -12,6 +12,7 @@ import {
 import { WorkspaceClient } from "@/app/(app)/workspace/workspace-client";
 import type { TemplateId } from "@/lib/resume/templates";
 import { isTemplateId } from "@/lib/resume/templates";
+import { hasLlmKey } from "@/lib/ai/models";
 
 type Props = { params: Promise<{ profileId: string }> };
 
@@ -60,6 +61,7 @@ export default async function WorkspacePage({ params }: Props) {
       initialPrimaryColor={primaryColor}
       initialLocale={profile.selectedLocale}
       sourceLocale={profile.sourceLocale}
+      aiEnabled={hasLlmKey()}
     />
   );
 }

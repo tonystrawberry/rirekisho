@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PatchConfirm, type AppliedProfile } from "@/components/chat/patch-confirm";
 import { extractJsonPatch } from "@/lib/ai/enrich-chat";
+import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 
 type MessageLike = {
@@ -46,6 +47,7 @@ export function EnrichmentChat({
   profileVersion,
   onProfileUpdated,
   applicationId,
+  aiEnabled = true,
 }: {
   profileId: string;
   chatId: string;
@@ -54,6 +56,7 @@ export function EnrichmentChat({
   onProfileUpdated: (profile: AppliedProfile) => void;
   /** When set (application Resume tab), chat is tailored to that job posting. */
   applicationId?: string | null;
+  aiEnabled?: boolean;
 }) {
   const [version, setVersion] = useState(profileVersion);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -143,7 +146,10 @@ export function EnrichmentChat({
         ref={scrollRef}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
       >
-        {messages.length === 0 ? (
+        {!aiEnabled ? (
+          <p className="text-sm text-muted">{AI_UNAVAILABLE_MESSAGE}</p>
+        ) : null}
+        {aiEnabled && messages.length === 0 ? (
           <p className="text-sm text-muted">
             {applicationId
               ? "Ask how to tailor this resume to the job posting — start a fresh conversation anytime."
@@ -211,10 +217,17 @@ export function EnrichmentChat({
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Share an achievement…"
-          disabled={isLoading}
+          placeholder={
+            aiEnabled
+              ? "Share an achievement…"
+              : "AI chat unavailable"
+          }
+          disabled={isLoading || !aiEnabled}
         />
-        <Button type="submit" disabled={isLoading || !input.trim()}>
+        <Button
+          type="submit"
+          disabled={isLoading || !aiEnabled || !input.trim()}
+        >
           Send
         </Button>
       </form>

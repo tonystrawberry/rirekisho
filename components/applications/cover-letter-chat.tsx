@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { extractCoverLetterSuggestion } from "@/lib/ai/cover-letter-chat";
+import { AI_UNAVAILABLE_MESSAGE } from "@/lib/ai/models";
 import { cn } from "@/lib/utils";
 
 type MessageLike = {
@@ -44,12 +45,14 @@ export function CoverLetterChat({
   initialMessages,
   currentContent,
   onSuggestionApplied,
+  aiEnabled = true,
 }: {
   applicationId: string;
   chatId: string;
   initialMessages: MessageLike[];
   currentContent: string;
   onSuggestionApplied: (content: string) => void;
+  aiEnabled?: boolean;
 }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearBusy, setClearBusy] = useState(false);
@@ -224,7 +227,10 @@ export function CoverLetterChat({
         ref={scrollRef}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
       >
-        {messages.length === 0 ? (
+        {!aiEnabled ? (
+          <p className="text-sm text-muted">{AI_UNAVAILABLE_MESSAGE}</p>
+        ) : null}
+        {aiEnabled && messages.length === 0 ? (
           <p className="text-sm text-muted">
             Ask the assistant to draft or refine parts of your cover letter.
           </p>
@@ -332,21 +338,28 @@ export function CoverLetterChat({
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask to refine a paragraph or draft a letter…"
-          disabled={isLoading}
+          placeholder={
+            aiEnabled
+              ? "Ask to refine a paragraph or draft a letter…"
+              : "AI chat unavailable"
+          }
+          disabled={isLoading || !aiEnabled}
           rows={2}
           className="min-h-[2.5rem] max-h-40 resize-y"
           onKeyDown={(e) => {
             // Enter = new line; ⌘/Ctrl+Enter sends.
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              if (!isLoading && input.trim()) {
+              if (aiEnabled && !isLoading && input.trim()) {
                 handleSubmit(e as unknown as FormEvent<HTMLFormElement>);
               }
             }
           }}
         />
-        <Button type="submit" disabled={isLoading || !input.trim()}>
+        <Button
+          type="submit"
+          disabled={isLoading || !aiEnabled || !input.trim()}
+        >
           Send
         </Button>
       </form>
