@@ -3,14 +3,8 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandWordmark } from "@/components/brand/brand-mark";
+import { AppHeaderNav } from "@/components/layout/app-header-nav";
 import { DesktopPreferredShell } from "@/components/layout/desktop-preferred-shell";
-
-const links = [
-  { href: "/applications", label: "Applications" },
-  { href: "/resumes", label: "Resumes" },
-  { href: "/sharing", label: "Sharing" },
-  { href: "/settings", label: "Settings" },
-];
 
 export default async function AppLayout({
   children,
@@ -32,17 +26,7 @@ export default async function AppLayout({
               >
                 <BrandWordmark markSize={22} />
               </Link>
-              <nav className="flex flex-wrap items-center gap-3 text-sm leading-none text-muted">
-                {links.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className="hover:text-foreground"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </nav>
+              <AppHeaderNav />
             </div>
             <AccountMenu />
           </div>
