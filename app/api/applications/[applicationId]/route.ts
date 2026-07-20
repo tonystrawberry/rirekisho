@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { badRequest, forbidden, notFound, unauthorized } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { applicationUpdateSchema } from "@/lib/applications/schema";
+import { syncIdentityFromApplication } from "@/lib/applications/sync-identity";
 
 type Params = { params: Promise<{ applicationId: string }> };
 
@@ -108,7 +109,20 @@ export async function PATCH(req: Request, { params }: Params) {
     include: { linkedResume: { select: { id: true, title: true } } },
   });
 
-  return NextResponse.json({ application: toItem(updated) });
+  let identity = null;
+  if (data.identity) {
+    identity = await syncIdentityFromApplication({
+      userId: session.user.id,
+      applicationId: updated.id,
+      linkedResumeId: updated.linkedResumeId,
+      identity: data.identity,
+    });
+  }
+
+  return NextResponse.json({
+    application: toItem(updated),
+    ...(identity ? { identity } : {}),
+  });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {

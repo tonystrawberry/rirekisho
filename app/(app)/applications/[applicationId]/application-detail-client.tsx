@@ -9,11 +9,14 @@ import {
   APPLICATION_STATUS_BADGE_CLASSES,
   APPLICATION_STATUS_OPTIONS,
   type ApplicationFormState,
+  type PersonalFormState,
   type ResumeOption,
 } from "@/components/applications/application-form";
 import { CoverLetterChat } from "@/components/applications/cover-letter-chat";
 import { CoverLetterEditor } from "@/components/applications/cover-letter-editor";
+import { WorkspaceClient } from "@/app/(app)/workspace/workspace-client";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,9 +39,27 @@ import {
   isResumeLocale,
   type ResumeLocaleId,
 } from "@/lib/resume/locales";
+import type { CompletenessResult } from "@/lib/resume/completeness";
+import type { MasterResume } from "@/lib/resume/schema";
+import type { TemplateId } from "@/lib/resume/templates";
+import { identityToPersonalInput } from "@/lib/applications/sync-identity";
 import { cn } from "@/lib/utils";
 
-export type DetailTab = "information" | "cover-letter";
+export type DetailTab = "information" | "resume" | "cover-letter";
+
+export type LinkedResumeWorkspace = {
+  profileId: string;
+  resumeTitle: string;
+  chatId: string;
+  initialMessages: Array<{ id: string; role: string; content: string }>;
+  profileVersion: number;
+  initialCompleteness: CompletenessResult;
+  initialData: MasterResume;
+  initialTemplateId: TemplateId;
+  initialPrimaryColor: string;
+  initialLocale: string;
+  sourceLocale: string;
+};
 
 export type ApplicationDetail = {
   id: string;
@@ -77,12 +98,27 @@ function formsEqual(a: ApplicationFormState, b: ApplicationFormState) {
   );
 }
 
+function personalEqual(a: PersonalFormState, b: PersonalFormState) {
+  return (
+    a.fullName === b.fullName &&
+    a.headline === b.headline &&
+    a.email === b.email &&
+    a.phone === b.phone &&
+    a.location === b.location &&
+    a.website === b.website
+  );
+}
+
 export function ApplicationDetailClient({
   application: initialApplication,
   initialTab,
+  linkedResumeWorkspace,
+  initialPersonal,
 }: {
   application: ApplicationDetail;
   initialTab: DetailTab;
+  linkedResumeWorkspace: LinkedResumeWorkspace | null;
+  initialPersonal: PersonalFormState;
 }) {
   const router = useRouter();
   const [application, setApplication] = useState(initialApplication);
@@ -93,6 +129,9 @@ export function ApplicationDetailClient({
   const [savedForm, setSavedForm] = useState<ApplicationFormState>(() =>
     toFormState(initialApplication),
   );
+  const [personal, setPersonal] = useState<PersonalFormState>(initialPersonal);
+  const [savedPersonal, setSavedPersonal] =
+    useState<PersonalFormState>(initialPersonal);
   const [resumes, setResumes] = useState<ResumeOption[]>([]);
   const [resumesLoading, setResumesLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -109,7 +148,7 @@ export function ApplicationDetailClient({
     useState<CoverLetterTemplateId>("classic");
   const [coverPrimaryColor, setCoverPrimaryColor] = useState("#0f6e56");
   const [coverIdentity, setCoverIdentity] = useState<CoverLetterIdentity>({
-    fullName: "Your Name",
+    fullName: initialPersonal.fullName || "Your Name",
   });
   const [coverMeta, setCoverMeta] = useState<CoverLetterMeta>({});
   const [coverLoaded, setCoverLoaded] = useState(false);
@@ -120,7 +159,8 @@ export function ApplicationDetailClient({
     Array<{ id: string; role: string; content: string }>
   >([]);
 
-  const dirty = !formsEqual(form, savedForm);
+  const dirty =
+    !formsEqual(form, savedForm) || !personalEqual(personal, savedPersonal);
 
   useEffect(() => {
     void loadResumes();
@@ -230,6 +270,13 @@ export function ApplicationDetailClient({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  function setPersonalField<K extends keyof PersonalFormState>(
+    key: K,
+    value: PersonalFormState[K],
+  ) {
+    setPersonal((prev) => ({ ...prev, [key]: value }));
+  }
+
   function navigateTab(next: DetailTab) {
     if (next === tab) return;
     if (tab === "information" && dirty) {
@@ -267,6 +314,14 @@ export function ApplicationDetailClient({
           ? new Date(form.appliedAt).toISOString()
           : null,
         linkedResumeId: form.linkedResumeId || null,
+        identity: {
+          fullName: personal.fullName,
+          headline: personal.headline,
+          email: personal.email,
+          phone: personal.phone,
+          location: personal.location,
+          website: personal.website,
+        },
       };
 
       const res = await fetch(`/api/applications/${application.id}`, {
@@ -285,6 +340,21 @@ export function ApplicationDetailClient({
       const nextForm = toFormState(saved);
       setForm(nextForm);
       setSavedForm(nextForm);
+
+      if (json.identity) {
+        const nextPersonal = identityToPersonalInput(
+          json.identity as CoverLetterIdentity,
+        );
+        setPersonal(nextPersonal);
+        setSavedPersonal(nextPersonal);
+        setCoverIdentity(json.identity as CoverLetterIdentity);
+      } else {
+        setSavedPersonal(personal);
+      }
+
+      // Reload cover letter / resume tabs so identity changes show up.
+      setCoverLoaded(false);
+      router.refresh();
       return true;
     } catch {
       setError("Network error");
@@ -542,6 +612,18 @@ export function ApplicationDetailClient({
           </button>
           <button
             type="button"
+            onClick={() => navigateTab("resume")}
+            className={cn(
+              "border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
+              tab === "resume"
+                ? "border-accent text-foreground"
+                : "border-transparent text-muted hover:text-foreground",
+            )}
+          >
+            Resume
+          </button>
+          <button
+            type="button"
             onClick={() => navigateTab("cover-letter")}
             className={cn(
               "border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
@@ -560,6 +642,8 @@ export function ApplicationDetailClient({
           <ApplicationForm
             form={form}
             onChange={setField}
+            personal={personal}
+            onPersonalChange={setPersonalField}
             resumes={resumes}
             resumesLoading={resumesLoading}
             busy={busy}
@@ -570,6 +654,33 @@ export function ApplicationDetailClient({
             onSubmit={(e) => void saveInformation(e)}
           />
         </div>
+      </div>
+
+      <div className={tab === "resume" ? "block" : "hidden"}>
+        {linkedResumeWorkspace ? (
+          <WorkspaceClient
+            key={`${linkedResumeWorkspace.profileId}-${linkedResumeWorkspace.profileVersion}`}
+            {...linkedResumeWorkspace}
+            embedded
+          />
+        ) : (
+          <Card className="space-y-3 py-6 text-sm text-muted">
+            <p className="font-medium text-foreground">No resume linked</p>
+            <p>
+              {linkedResumeUnavailable
+                ? "The linked resume is no longer available. Pick another resume on the Information tab."
+                : "Link a resume on the Information tab to edit it here — same chat and preview as the resume workspace."}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => navigateTab("information")}
+            >
+              Go to Information
+            </Button>
+          </Card>
+        )}
       </div>
 
       <div className={tab === "cover-letter" ? "block" : "hidden"}>
@@ -652,6 +763,7 @@ export function ApplicationDetailClient({
               onClick={() => {
                 if (!pendingTab) return;
                 setForm(savedForm);
+                setPersonal(savedPersonal);
                 applyTab(pendingTab);
                 setPendingTab(null);
               }}
