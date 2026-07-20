@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function SignInButton() {
@@ -9,6 +10,7 @@ export function SignInButton() {
       size="lg"
       onClick={() => signIn("github", { callbackUrl: "/resumes" })}
     >
+      <Github className="size-5" aria-hidden />
       Continue with GitHub
     </Button>
   );

@@ -27,7 +27,7 @@ export function DesktopPreferredShell({
           Please open it on a computer to continue.
         </p>
       </div>
-      <div className="hidden xl:contents">{children}</div>
+      <div className="hidden xl:contents print:contents">{children}</div>
     </>
   );
 }
