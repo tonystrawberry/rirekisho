@@ -38,6 +38,7 @@ export function WorkspaceClient({
   initialPrimaryColor,
   initialLocale,
   sourceLocale,
+  embedded = false,
 }: {
   profileId: string;
   resumeTitle: string;
@@ -50,6 +51,8 @@ export function WorkspaceClient({
   initialPrimaryColor: string;
   initialLocale: string;
   sourceLocale: string;
+  /** Hide page-level breadcrumb/title when embedded in another page (e.g. application tab). */
+  embedded?: boolean;
 }) {
   const [completeness, setCompleteness] = useState(initialCompleteness);
   const [sourceData, setSourceData] = useState(initialData);
@@ -284,22 +287,24 @@ export function WorkspaceClient({
 
   return (
     <div className="space-y-4">
-      <div className="print:hidden">
-        <p className="text-sm text-muted">
-          <Link href="/resumes" className="hover:text-accent">
-            Resumes
-          </Link>
-          <span className="mx-1.5">/</span>
-          <span className="text-foreground">{resumeTitle}</span>
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          {resumeTitle}
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          Build in chat or click any text on the preview to edit it directly,
-          then export or share a PDF.
-        </p>
-      </div>
+      {!embedded ? (
+        <div className="print:hidden">
+          <p className="text-sm text-muted">
+            <Link href="/resumes" className="hover:text-accent">
+              Resumes
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-foreground">{resumeTitle}</span>
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            {resumeTitle}
+          </h1>
+          <p className="mt-2 max-w-2xl text-muted">
+            Build in chat or click any text on the preview to edit it directly,
+            then export or share a PDF.
+          </p>
+        </div>
+      ) : null}
 
       <div className="resume-workspace-grid grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="flex min-h-0 flex-col gap-4 print:hidden xl:sticky xl:top-4 xl:self-start">

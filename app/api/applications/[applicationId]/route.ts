@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { badRequest, forbidden, notFound, unauthorized } from "@/lib/api-error";
 import { prisma } from "@/lib/db";
 import { applicationUpdateSchema } from "@/lib/applications/schema";
+import { syncIdentityFromApplication } from "@/lib/applications/sync-identity";
 
 type Params = { params: Promise<{ applicationId: string }> };
 
@@ -17,7 +18,6 @@ function toItem(
     status: ApplicationStatus;
     appliedAt: Date | null;
     linkedResumeId: string | null;
-    coverLetterId: string | null;
     createdAt: Date;
     updatedAt: Date;
     linkedResume: { id: string; title: string } | null;
@@ -33,8 +33,6 @@ function toItem(
     appliedAt: app.appliedAt?.toISOString() ?? null,
     linkedResumeId: app.linkedResumeId,
     linkedResumeTitle: app.linkedResume?.title ?? null,
-    coverLetterId: app.coverLetterId,
-    coverLetterState: "coming_soon" as const,
     createdAt: app.createdAt.toISOString(),
     updatedAt: app.updatedAt.toISOString(),
   };
@@ -107,13 +105,24 @@ export async function PATCH(req: Request, { params }: Params) {
       appliedAt: data.appliedAt === undefined ? undefined : data.appliedAt,
       linkedResumeId:
         data.linkedResumeId === undefined ? undefined : data.linkedResumeId,
-      coverLetterId:
-        data.coverLetterId === undefined ? undefined : data.coverLetterId,
     },
     include: { linkedResume: { select: { id: true, title: true } } },
   });
 
-  return NextResponse.json({ application: toItem(updated) });
+  let identity = null;
+  if (data.identity) {
+    identity = await syncIdentityFromApplication({
+      userId: session.user.id,
+      applicationId: updated.id,
+      linkedResumeId: updated.linkedResumeId,
+      identity: data.identity,
+    });
+  }
+
+  return NextResponse.json({
+    application: toItem(updated),
+    ...(identity ? { identity } : {}),
+  });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {

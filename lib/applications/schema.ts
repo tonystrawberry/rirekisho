@@ -12,6 +12,15 @@ const optionalDate = z
   .nullable()
   .transform((value) => (value ? new Date(value) : null));
 
+export const personalIdentitySchema = z.object({
+  fullName: z.string().trim().max(200),
+  headline: z.string().trim().max(300).optional(),
+  email: z.string().trim().max(320).optional(),
+  phone: z.string().trim().max(80).optional(),
+  location: z.string().trim().max(200).optional(),
+  website: z.string().trim().max(2000).optional(),
+});
+
 export const applicationCreateSchema = z.object({
   title: titleSchema,
   description: optionalString(5000),
@@ -20,10 +29,14 @@ export const applicationCreateSchema = z.object({
   status: z.nativeEnum(ApplicationStatus).optional(),
   appliedAt: optionalDate,
   linkedResumeId: z.string().trim().min(1).optional().nullable(),
-  coverLetterId: z.string().trim().min(1).optional().nullable(),
 });
 
-export const applicationUpdateSchema = applicationCreateSchema.partial();
+export const applicationUpdateSchema = applicationCreateSchema
+  .partial()
+  .extend({
+    identity: personalIdentitySchema.optional(),
+  });
 
 export type ApplicationCreateInput = z.infer<typeof applicationCreateSchema>;
 export type ApplicationUpdateInput = z.infer<typeof applicationUpdateSchema>;
+export type PersonalIdentityInput = z.infer<typeof personalIdentitySchema>;

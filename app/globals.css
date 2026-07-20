@@ -153,6 +153,61 @@ a {
     max-width: none !important;
     width: 100% !important;
   }
+
+  /*
+   * Cover letter PDF: html.printing-cover-letter is set by printCoverLetter(),
+   * which moves .cover-letter-print-root onto <body> so layout matches A4.
+   */
+  html.printing-cover-letter,
+  html.printing-cover-letter body {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  html.printing-cover-letter body > *:not(.cover-letter-print-root) {
+    display: none !important;
+  }
+
+  html.printing-cover-letter .cover-letter-print-root {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-sizing: border-box !important;
+  }
+
+  html.printing-cover-letter .cover-letter-print-root > * {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html.printing-cover-letter .cover-letter-print-root article {
+    box-shadow: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .cover-letter-theme-sidebar {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 /* On-screen A4 resume pages — always real 210mm width; shell scales to fit */
@@ -188,12 +243,21 @@ a {
   max-width: none !important;
 }
 
-/* Resume theme (scoped via --resume-primary on .resume-print-root) */
+/* Resume / cover letter theme (scoped via --resume-primary) */
 .resume-theme-header {
   background-color: var(--resume-primary, #0f6e56);
   color: var(--resume-primary-fg, #f4fbf8);
 }
 
 .resume-theme-heading {
+  color: var(--resume-primary, #0f6e56);
+}
+
+.cover-letter-theme-sidebar {
+  background-color: var(--resume-primary, #0f6e56);
+  color: var(--resume-primary-fg, #f4fbf8);
+}
+
+.cover-letter-theme-accent {
   color: var(--resume-primary, #0f6e56);
 }

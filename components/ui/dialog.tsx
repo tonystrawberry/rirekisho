@@ -17,7 +17,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-foreground/40",
+      "fixed inset-0 z-50 bg-foreground/40 print:hidden",
       className,
     )}
     {...props}
@@ -31,7 +31,7 @@ const DialogContent = React.forwardRef<
     showCloseButton?: boolean;
   }
 >(({ className, children, showCloseButton = true, ...props }, ref) => (
-  <DialogPortal>
+  <DialogPortal data-print-portal="">
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}

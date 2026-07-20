@@ -1,5 +1,9 @@
-import type { SharedResumeLink } from "@prisma/client";
+import type { SharedResumeLink, SharedCoverLetterLink } from "@prisma/client";
 import { publicSharePath, publicShareUrl } from "@/lib/share/tokens";
+import {
+  publicCoverLetterSharePath,
+  publicCoverLetterShareUrl,
+} from "@/lib/cover-letter/share";
 
 export function sharedLinkToResponse(
   link: SharedResumeLink,
@@ -21,6 +25,28 @@ export function sharedLinkToResponse(
     revokedAt: link.revokedAt?.toISOString() ?? null,
     path: publicSharePath(link.token),
     url: publicShareUrl(link.token, origin),
+  };
+}
+
+export function sharedCoverLetterLinkToResponse(
+  link: SharedCoverLetterLink,
+  origin?: string,
+) {
+  return {
+    id: link.id,
+    token: link.token,
+    locale: link.locale,
+    templateId: link.templateId,
+    primaryColor: link.primaryColor,
+    sourceVersion: link.sourceVersion,
+    status: link.status,
+    label: link.label,
+    viewCount: link.viewCount,
+    createdAt: link.createdAt.toISOString(),
+    updatedAt: link.updatedAt.toISOString(),
+    revokedAt: link.revokedAt?.toISOString() ?? null,
+    path: publicCoverLetterSharePath(link.token),
+    url: publicCoverLetterShareUrl(link.token, origin),
   };
 }
 
