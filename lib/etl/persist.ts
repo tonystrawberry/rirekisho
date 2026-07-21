@@ -37,6 +37,61 @@ export async function createProfile(
   });
 }
 
+function defaultCopyTitle(title: string): string {
+  const base = title.trim() || "Untitled resume";
+  return `${base} (copy)`;
+}
+
+/**
+ * Duplicate a resume owned by the user: master data, template/colors/locales,
+ * and locale presentations. Does not copy chat, import snapshots, exports,
+ * share links, or job-application links.
+ */
+export async function duplicateProfile(
+  userId: string,
+  profileId: string,
+  options?: { title?: string },
+) {
+  const source = await prisma.masterResumeProfile.findFirst({
+    where: { id: profileId, userId },
+    include: { localePresentations: true },
+  });
+  if (!source) return null;
+
+  const title =
+    options?.title?.trim() || defaultCopyTitle(source.title);
+
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.masterResumeProfile.create({
+      data: {
+        userId,
+        title,
+        data: source.data as Prisma.InputJsonValue,
+        completeness: source.completeness as Prisma.InputJsonValue,
+        selectedTemplateId: source.selectedTemplateId,
+        primaryColor: source.primaryColor,
+        sourceLocale: source.sourceLocale,
+        selectedLocale: source.selectedLocale,
+        version: 1,
+      },
+    });
+
+    if (source.localePresentations.length > 0) {
+      await tx.localePresentation.createMany({
+        data: source.localePresentations.map((p) => ({
+          profileId: created.id,
+          locale: p.locale,
+          data: p.data as Prisma.InputJsonValue,
+          // Match new profile version so translations are not marked stale.
+          sourceVersion: 1,
+        })),
+      });
+    }
+
+    return created;
+  });
+}
+
 /**
  * @deprecated Prefer createProfile / getOwnedProfile. Kept for call sites that
  * previously auto-created the single profile — now creates only when none exist,

@@ -52,6 +52,7 @@ export function ResumesClient({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ResumeListItem | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [linkedinOpen, setLinkedinOpen] = useState(false);
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [linkedinTitle, setLinkedinTitle] = useState("");
@@ -178,13 +179,40 @@ export function ResumesClient({
     }
   }
 
+  async function duplicateResume(resume: ResumeListItem) {
+    if (duplicatingId) return;
+    setDuplicatingId(resume.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/profile/${resume.id}/duplicate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error?.message || "Could not duplicate resume");
+        return;
+      }
+      const item = json.resume as ResumeListItem | undefined;
+      if (item) {
+        setResumes((prev) => [item, ...prev]);
+      }
+      router.push(`/workspace/${json.profile.id}`);
+    } catch {
+      setError("Network error");
+    } finally {
+      setDuplicatingId(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Resumes</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Create and open resumes. Each one has its own chat, preview, and share
-          links.
+          links. Duplicate an existing resume to tailor a copy for a new role.
         </p>
       </div>
 
@@ -257,6 +285,14 @@ export function ResumesClient({
                   onClick={() => router.push(`/workspace/${r.id}`)}
                 >
                   Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={duplicatingId === r.id}
+                  onClick={() => void duplicateResume(r)}
+                >
+                  {duplicatingId === r.id ? "Duplicating…" : "Duplicate"}
                 </Button>
                 <Button
                   size="sm"
