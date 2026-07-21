@@ -19,7 +19,7 @@ Deleting an application cascades cover letter + conversation; the linked resume 
 1. Normalize URL — only `http`/`https`; block localhost, private IPv4, `.internal` (SSRF).
 2. Fetch HTML with timeout + size cap (`MAX_HTML_BYTES`, `FETCH_TIMEOUT_MS`).
 3. Strip tags to text (`htmlToText`).
-4. If Gemini is configured, `generateObject` into `extractedJobSchema`; else store truncated raw text.
+4. If an LLM is configured, `generateObject` into `extractedJobSchema` (full posting + structured fields — no summarization); else store cleaned raw text (up to `MAX_TEXT_CHARS`).
 5. Persist on the application when `jobPostingParsedUrl` matches current URL; otherwise re-parse.
 
 Why not scrape on every chat turn? Cost, latency, and flaky job boards. Cache-by-URL is the boring correct answer.

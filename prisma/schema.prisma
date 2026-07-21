@@ -144,7 +144,7 @@ model JobApplication {
   description    String?
   companyName    String?
   jobUrl         String?
-  /// Cleaned job posting extracted from jobUrl (fetched once per URL).
+  /// Full cleaned job posting from jobUrl (fetched once per URL; not a summary).
   jobPostingText      String?   @db.Text
   jobPostingParsedUrl String?
   jobPostingParsedAt  DateTime?

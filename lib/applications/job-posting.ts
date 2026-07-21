@@ -4,18 +4,50 @@ import { prisma } from "@/lib/db";
 import { getChatModel, hasLlmKey } from "@/lib/ai/models";
 
 const MAX_HTML_BYTES = 1_500_000;
-const MAX_TEXT_CHARS = 40_000;
-const MAX_STORED_CHARS = 12_000;
+/** Max cleaned page text kept after HTML strip (and what we persist). */
+const MAX_TEXT_CHARS = 100_000;
 const FETCH_TIMEOUT_MS = 12_000;
 
+/**
+ * Structured extract of the full posting. Fields are optional so partial
+ * pages still parse; `fullPosting` must carry the complete substantive text.
+ */
 const extractedJobSchema = z.object({
   roleTitle: z.string().optional(),
   company: z.string().optional(),
   location: z.string().optional(),
-  summary: z.string().describe("Concise overview of the role"),
-  responsibilities: z.string().describe("Key responsibilities as prose or bullets"),
-  requirements: z.string().describe("Required skills, experience, education"),
+  employmentType: z
+    .string()
+    .optional()
+    .describe("Full-time, part-time, contract, internship, etc."),
+  compensation: z
+    .string()
+    .optional()
+    .describe("Salary, equity, bonus, or pay range if stated"),
+  summary: z.string().optional().describe("Overview of the role if present"),
+  responsibilities: z
+    .string()
+    .optional()
+    .describe("Responsibilities / what you will do"),
+  requirements: z
+    .string()
+    .optional()
+    .describe("Required skills, experience, education"),
   niceToHave: z.string().optional(),
+  benefits: z.string().optional().describe("Benefits, perks, culture notes"),
+  applicationInstructions: z
+    .string()
+    .optional()
+    .describe("How to apply, deadlines, contacts"),
+  otherDetails: z
+    .string()
+    .optional()
+    .describe("Any other substantive posting content not covered above"),
+  fullPosting: z
+    .string()
+    .describe(
+      "Complete job posting body with ALL substantive sections preserved verbatim (role, company, location, pay, responsibilities, requirements, nice-to-haves, benefits, EEO, apply instructions, and anything else). Do not summarize or omit content. Omit only site chrome.",
+    ),
 });
 
 function isBlockedHostname(hostname: string): boolean {
@@ -115,39 +147,65 @@ async function fetchPageText(url: string): Promise<string> {
 function formatExtracted(
   extracted: z.infer<typeof extractedJobSchema>,
 ): string {
-  const parts = [
+  // Prefer the complete body so nothing is lost to summarization.
+  // Short metadata header aids scanning; section fields fill gaps if
+  // fullPosting is empty (model quirk / partial extract).
+  const header = [
     extracted.roleTitle ? `Role: ${extracted.roleTitle}` : null,
     extracted.company ? `Company: ${extracted.company}` : null,
     extracted.location ? `Location: ${extracted.location}` : null,
+    extracted.employmentType
+      ? `Employment type: ${extracted.employmentType}`
+      : null,
+    extracted.compensation ? `Compensation:\n${extracted.compensation}` : null,
+  ].filter(Boolean);
+
+  const full = extracted.fullPosting?.trim();
+  if (full) {
+    return [...header, `Full posting:\n${full}`]
+      .join("\n\n")
+      .slice(0, MAX_TEXT_CHARS);
+  }
+
+  const parts = [
+    ...header,
     extracted.summary ? `Summary:\n${extracted.summary}` : null,
     extracted.responsibilities
       ? `Responsibilities:\n${extracted.responsibilities}`
       : null,
     extracted.requirements ? `Requirements:\n${extracted.requirements}` : null,
     extracted.niceToHave ? `Nice to have:\n${extracted.niceToHave}` : null,
+    extracted.benefits ? `Benefits:\n${extracted.benefits}` : null,
+    extracted.applicationInstructions
+      ? `How to apply:\n${extracted.applicationInstructions}`
+      : null,
+    extracted.otherDetails ? `Other details:\n${extracted.otherDetails}` : null,
   ].filter(Boolean);
-  return parts.join("\n\n").slice(0, MAX_STORED_CHARS);
+  return parts.join("\n\n").slice(0, MAX_TEXT_CHARS);
 }
 
 async function parseJobPostingText(pageText: string): Promise<string> {
   if (!hasLlmKey()) {
-    return pageText.slice(0, MAX_STORED_CHARS);
+    return pageText.slice(0, MAX_TEXT_CHARS);
   }
   try {
     const { object } = await generateObject({
       model: getChatModel(),
       schema: extractedJobSchema,
-      prompt: `Extract the job posting details from this web page text.
+      prompt: `Extract the COMPLETE job posting from this web page text.
 Ignore navigation, cookie banners, login walls, ads, and unrelated footers.
-Keep concrete requirements and responsibilities. Do not invent facts.
+Preserve ALL substantive content — do not summarize, shorten, or drop sections
+(compensation, benefits, requirements, responsibilities, EEO, apply steps, etc.).
+Fill every schema field that appears in the page. Put the full posting body in
+fullPosting. Do not invent facts.
 
 PAGE TEXT:
 ${pageText}`,
     });
     const formatted = formatExtracted(object);
-    return formatted || pageText.slice(0, MAX_STORED_CHARS);
+    return formatted || pageText.slice(0, MAX_TEXT_CHARS);
   } catch {
-    return pageText.slice(0, MAX_STORED_CHARS);
+    return pageText.slice(0, MAX_TEXT_CHARS);
   }
 }
 
